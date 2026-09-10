@@ -17,10 +17,12 @@ will produce `test-snippet.parsed.coded.csv` (and other optional output files), 
 
 The scripts were developed for French input, but `childes.py` is sensitive to the language CODE in CHAT files. French, Italian, German and English CHILDES files were processed successfully. For other languges, please adapt:
 
-- `childes.py`: add tokenisation rules to the function `tokenise()`. If you use the options --pos_utterance and --pos_output, their  arguments need to match the language-specific pos tags.
+- `childes.py`: add tokenisation rules to the function `tokenise()`. The options `--pos_utterance` and `--pos_output` match the parser's UPOS (`VERB`, `AUX`, `NOUN`, ...), which is the same across languages; with `--use_tagger_pos` they match the tagger's own tags instead, and those are language- and model-specific.
 - `dql.py`: adapt the Grew query (syntactic coding) to language-specific UD annotation
 
 For some languages, the folder _other-languages_  contains a usable wrapper script and coding query file.
+
+A step-by-step guide, from a CHAT file to a coded table, is in [HOWTO.md](HOWTO.md).
 
 ## Citation
 
@@ -133,20 +135,25 @@ Use the options `-1`and `-2` if you want to execute conversion / annotation (`ch
 Process a sample of French CHILDES projects, generating parsed output and HTML files. The utterance text will only be included in rows where the token is a verb or auxiliary.
 
 ```sh
-python3 childes.py french-sample.cha \
+python3 childes.py test-snippet.cha \
     --api_model french \
     --html_dir html_output --server_url "http://your.server/html_output" \
     --write_conllu \
-    --pos_utterance 'VER|AUX' \
-    --pos_output 'VER|AUX|NOUN|ADJ'
+    --pos_utterance '^(VERB|AUX)' \
+    --pos_output '^(VERB|AUX|NOUN|ADJ)'
 ```
 
 The command above will generate:
 
-  - `french-sample.cha.parsed.csv`
-  - `french-sample.cha.light.csv` (containing only rows with VER, AUX, NOUN, ADJ)
-  - `french-sample.cha.conllu`
+  - `test-snippet.parsed.csv`
+  - `test-snippet.light.csv` (only the rows tagged VERB, AUX, NOUN or ADJ, and without the CoNLL-U columns)
+  - `test-snippet.conllu`
   - HTML files inside the `html_output/` directory.
+
+The POS regexes match UPOS, not the tagger's tags: `VER` would match `VERB` by
+prefix but `NOM` would not match `NOUN`, and `AUX` would be missed by a regex
+written for a TreeTagger tagset. Pass `--use_tagger_pos` to match the tagger's
+own tags instead.
 
 ## Dependency query language (dql.py)
 
@@ -168,10 +175,10 @@ python3 dql.py --first_rule my_queries.query my_corpus.conllu > my_corpus.coded.
 This mode takes a CoNLL-U file that has been annotated with `coding` metadata and merges this information into a corresponding CSV file. The script aligns data using the `utt_id` and word number.
 
 ```sh
-python3 dql.py --merge childes-all.cha.tagged.csv childes-all.coded.conllu
+python3 dql.py --merge test-snippet.parsed.csv test-snippet.coded.conllu
 ```
 
-This command reads `childes-all.coded.conllu`, extracts the codings, and writes a new CSV file named `childes-all.cha.tagged.coded.csv`.
+This command reads `test-snippet.coded.conllu`, extracts the codings, and writes a new CSV file named `test-snippet.parsed.coded.csv`: `.coded` is inserted before the final extension.
 
   - For a coding string like `clitic:obj(3>5_lemma)`, the script adds the value `obj(3>5_lemma)` to a column named `clitic`.
   - By default, the coding is added to the row corresponding to the **node**, specified by e.g. `node=V` in the coding instruction (token `3` in the example).
