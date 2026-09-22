@@ -128,11 +128,14 @@ def cleanUtt(s):
     # Letters incl. accented, apostrophe and hyphen only; digits and dots stay
     # excluded so that a pause the rule above somehow missed is left visible as
     # '(5.)' rather than silently turned into the word '5.'.
-    s = re.sub(r"\(([A-Za-zÀ-ÿ'’\-]+)\)", r'\1', s)
+    s = re.sub(r"\(([A-Za-zéÀ-ÿ'’\-]+)\)", r'\1', s)
     s = re.sub(r' \+/+', ' ', s)                  # Remove +/
     # added v4.4
-    s = re.sub(r'@[a-z:0-9]+', '', s)             # Remove special CHAT suffixes like @c, @s:eng
+    s = re.sub(r':?@[a-z:0-9]+', '', s)             # Remove special CHAT suffixes like @c, @s:eng
+    s = re.sub('↑', '', s)                        # Remove specific suffixes like ↑
     s = re.sub(r'&[\S]+', '', s)                  # Remove phonological fragments like &mm, event codes like &=laugh
+    # added after v4.4
+    
     # must run AFTER the &-removal above: &=word's '=' would otherwise be turned into a
     # space first, splitting it into a bare '&' plus a stray real-looking word ('& laugh')
     s = re.sub(r'[_=]', ' ', s)                   # Replace _ and = with space
@@ -1040,8 +1043,8 @@ class ChatProcessor:
                 s = re.sub(r'\baux\b', 'à les', s)
                 s = re.sub(r'\bAu\b', 'À le', s)
                 s = re.sub(r'\bau\b', 'à le', s)
-            reBeginChar = re.compile(r'([\|\{\(\/\´\`"»«°<])') 
-            reEndChar = re.compile(r'([\]\|\}\/\`\"\),\;\:\!\?\.\%»«>])(?=\s|$)')   # also if followed by end of line
+            reBeginChar = re.compile(r'([\|\{\(\/\´\`\"\“»«°<])') 
+            reEndChar = re.compile(r'([\]\|\}\/\`\"\”\“\),\;\:\!\?\.\%»«>])(?=\s|$)')   # also if followed by end of line
             reBeginString = re.compile(r'([dcjlmnstDCJLNMST]\'|[Qq]u\'|[Jj]usqu\'|[Ll]orsqu\')') 
             reEndString = re.compile(r'(-t-elles?|-t-ils?|-t-on|-ce|-elles?|-ils?|-je|-la|-les?|-leur|-lui|-mêmes?|-m\'|-moi|-nous|-on|-toi|-tu|-t\'|-vous|-en|-y|-ci|-là)') 
             s = re.sub(reBeginString, r'\1 ', s)
@@ -1052,8 +1055,8 @@ class ChatProcessor:
         # Add other languages here with 'elif self.args.language == "other_language":'
         elif hasattr(self, 'language') and re.search(r'ita|italian', self.language):
             # Punctuation and delimiters like French
-            s = re.sub(r'([\|\{\(\/\´\`"»«°<])', r'\1 ', s)
-            s = re.sub(r'([\]\|\}\/\`\"\),\;\:\!\?\.\%»«>])(?=\s|$)', r' \1', s)
+            s = re.sub(r'([\|\{\(\/\´\`\"\”\“»«°<])', r'\1 ', s)
+            s = re.sub(r'([\]\|\}\/\`\"\”\“\),\;\:\!\?\.\%»«>])(?=\s|$)', r' \1', s)
             # Split apostrophe preceding a letter: l', un', c', d', gl', dell', quest', etc.
             #   but NOT split apocope like "po' " (followed by space)
             s = re.sub(r"([a-zA-Z]+')(?=[a-zA-Zà-úÀ-Ú])", r"\1 ", s)
