@@ -17,10 +17,15 @@ rule init_fix_misc {
 }
 
 package duplicate_complements {
-  % tu me/obj le/obj donnes 
+  % tu me/obj le/obj donnes
   rule two_object_pronouns {
     pattern {
-      V [];
+      % VERB|AUX only: those are the nodes init_fix_misc gives a fix to. On any
+      % other head, V.fix + ... is an undefined feature, and Grew then fails the
+      % WHOLE corpus - which is how Paris (289,343 sentences) went through the
+      % pipeline with no correction at all: one sentence, 39185_u927
+      % "oh moi le .", where UDPipe made the interjection the head of two objects.
+      V [upos=VERB|AUX];
       PRON1 [form=/^[mtnv].*/, upos=PRON];   % me, te, nous, vous
       PRON2 [form=/^l.*/, upos=PRON];     % le, la, les
       e1:V -[obj]-> PRON1;
@@ -308,7 +313,7 @@ package dislocation {
   % Montre lui, à Marie, le livre !
   rule disloc_dative_comma {
     pattern {
-      V [];
+      V [upos=VERB|AUX];   % V.fix below: see two_object_pronouns
       PRON [form=/lui|leur/];
       COMMA [form=","];
       P [lemma=/^à/];   % à or à.le 
@@ -328,20 +333,954 @@ package dislocation {
 
 }
 
+
+% ============================================================
+% 3. Corrections toward the gold standard
+%    Mathilde Regnault, written against the CHILDES gold sentences
+%    (childes-processed, tools/grew-grammars/correction-reparandum.grs @ 52ba41e,
+%    11 Sep 2026), merged here so that every output of the pipeline gets them.
+%    They run AFTER parts 1-2: dislocated-todo resolves the dislocated:todo that
+%    dislocation.double_subject_pre leaves for it.
+%
+%    Changes from the source file, none to what a rule matches or rewrites:
+%    - every rule logs itself as fix=...,<rule name> on the node whose relation
+%      it changes (several logged nothing, the others overwrote fix);
+%    - her init_fix_misc is dropped (it set fix="", which Grew cannot match);
+%      fix_logging below gives every node a fix for the duration of this part
+%      and removes the unused ones afterwards, so the output convention is
+%      unchanged: fix=none on VERB/AUX, fix=none,<rule> where a rule fired;
+%    - every rule except reroot-conj rewrites a given token at most once
+%      (the lines marked ONCE, the same device as oblique.aller_a). In the
+%      source, rules that undo each other (basic-conj / reroot-conj /
+%      double-prep-1 on "à à à à", insistance / ohlala on "oh là là là") went
+%      round in circles until a round left the graph unchanged; once every
+%      firing is logged, no round leaves it unchanged, and Grew stopped at
+%      10,000 steps, which fails the whole file;
+%    - guards, marked GUARD, where the source rule could build a cycle or
+%      delete the root (then reroot-conj can loop past Grew's 10,000 steps,
+%      which fails the whole file).
+% ============================================================
+
+package fix_logging {
+  rule init_all {
+    pattern { N [!fix]; }
+    commands { N.fix = "none"; }
+  }
+  rule clean {
+    pattern { N [fix="none", upos<>VERB|AUX]; }
+    commands { del_feat N.fix; }
+  }
+}
+
+package change-pos {
+    rule pos-regarde {
+        pattern {
+            A [form="regarde", upos="NOUN"];
+            e: X -[^root]-> A;
+        }
+        without { A [fix=re".*,pos-regarde\(,.*\)?"] }   % ONCE
+        commands {
+            A.lemma="regarder";
+            A.upos="VERB";
+            del_edge e;
+            add_edge X -[discourse]-> A;
+            A.Mood="Imp";
+            A.Number="Sing";
+            A.Person="2";
+            A.Tense="Pres";
+            A.VerbForm="Fin";
+            A.fix = A.fix + "," + "pos-regarde";
+        }
+    }
+}
+
+package dislocated-todo {
+    rule dislocated-vocative {
+        pattern {
+            e:VERB -[dislocated:todo]-> P1;
+            VERB -[nsubj]-> P2;
+            %P1 < P2;
+            P1 [upos=PROPN];
+            P2 [Case=Nom];
+            P2 [Person=2]
+        }
+        without { P1 [fix=re".*,dislocated-vocative\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge VERB -[vocative]-> P1;
+            P1.fix = P1.fix + "," + "dislocated-vocative";
+        }
+    }
+
+    rule toi-tu-suj {
+        pattern {
+            e:VERB -[dislocated:todo]-> P1;
+            VERB -[nsubj]-> P2;
+            P1 < P2;
+            P1.Person = P2.Person;
+            P1 [Emph="Yes"]
+        } without { P2 [Emph="Yes"] }
+        without { P1 [fix=re".*,toi-tu-suj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge VERB -[dislocated:subj]-> P1;
+            P1.fix = P1.fix + "," + "toi-tu-suj";
+        }
+    }
+
+    rule cela-dislocated-suj {
+        pattern {
+            e:VERB -[dislocated]-> P1;
+            VERB -[nsubj]-> P2;
+            P1 < P2;
+            P1.lemma = P2.lemma;
+            P1 [lemma="ça"]
+        }
+        without { P1 [fix=re".*,cela-dislocated-suj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge VERB -[dislocated:subj]-> P1;
+            P1.fix = P1.fix + "," + "cela-dislocated-suj";
+        }
+    }
+
+    rule toi-tu-obj {
+        pattern {
+            e:VERB -[dislocated:todo]-> P1;
+            VERB -[nsubj]-> P2;
+            P1 < P2;
+            P1.Person <> P2.Person;
+            P1 [Emph="Yes"]
+        } without { P2 [Emph="Yes"] }
+        without { P1 [fix=re".*,toi-tu-obj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge VERB -[dislocated:obj]-> P1;
+            P1.fix = P1.fix + "," + "toi-tu-obj";
+        }
+    }
+
+    rule repetition-nominative {
+        % Champaud: il il il est à moi .
+        pattern {
+            e:VERB -[dislocated:todo|expl:subj]-> P1;
+            VERB -[nsubj]-> P2;
+            P1 << P2;
+            P1 [Case=Nom]
+        }
+        without {
+            P1 [Emph="Yes"]
+        }
+        without { P1 [fix=re".*,repetition-nominative\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge P2 -[reparandum]-> P1;
+            P1.fix = P1.fix + "," + "repetition-nominative";
+        }
+    }
+
+    rule moi-je {
+        % Champaud: moi moi moi je travaille avec Christian Champaud .
+        pattern {
+            A [upos="PRON", Emph="Yes"];
+            B [upos="PRON", Emph="Yes"];
+            A << B;
+            A.form = B.form;
+            V -[nsubj]-> C;
+            e: V -[dislocated|dislocated:todo]-> A;
+            f: V -[dislocated|dislocated:todo]-> B;
+            C.Person = A.Person;
+        }
+        without { B [fix=re".*,moi-je\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge V -[dislocated:subj]-> A;
+            del_edge f;
+            add_edge A -[conj]-> B;
+            B.fix = B.fix + "," + "moi-je";
+        }
+    }
+
+    rule fake-flatname-1 {
+        pattern {
+            V -> X;
+            e:X -[flat:name]-> Y;
+            X [upos="PROPN"];
+            Y [upos="INTJ"]
+        } without {
+            V -[root]-> X
+        }
+        without { Y [fix=re".*,fake-flatname-1\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge V -[discourse]-> Y;
+            Y.fix = Y.fix + "," + "fake-flatname-1";
+        }
+    }
+
+    rule fake-flatname-2 {
+        pattern {
+            %V -[root]-> X;
+            e:X -[flat:name]-> Y;
+            Y [upos="INTJ"|"X"]
+        }
+        without { Y [fix=re".*,fake-flatname-2\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge X -[discourse]-> Y;
+            Y.fix = Y.fix + "," + "fake-flatname-2";
+        }
+    }
+
+    rule fake-discourse {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            e: A -[discourse]-> B
+        }
+        without { B [fix=re".*,fake-discourse\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            B.fix = B.fix + "," + "fake-discourse";
+        }
+    }
+
+    % while we're here
+    rule reroot-discourse {
+        pattern {
+            V -[obj|nsubj]-> X;
+            e: X -[discourse]-> D;
+        }
+        without { D [fix=re".*,reroot-discourse\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge V -[discourse]-> D;
+            D.fix = D.fix + "," + "reroot-discourse";
+        }
+    }
+
+    rule conj-discourse {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            X -[conj]-> A;
+            e: X -[discourse]-> B
+        }
+        without { B [fix=re".*,conj-discourse\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge X -[conj]-> B;
+            B.fix = B.fix + "," + "conj-discourse";
+        }
+    }
+
+    rule double-discourse {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            X -[discourse]-> A;
+            e: X -[discourse]-> B
+        }
+        without { B [fix=re".*,double-discourse\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            B.fix = B.fix + "," + "double-discourse";
+        }
+    }
+
+    rule double-subj {
+        pattern {
+            e: X -[nsubj]-> A;
+            A [upos="PROPN"];
+            X -[nsubj]-> B;
+            B [upos="PRON", PronType="Prs"]
+        }
+        without { A [fix=re".*,double-subj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge X -[dislocated:subj]-> A;
+            A.fix = A.fix + "," + "double-subj";
+        }
+    }
+}
+
+package triplets {
+% WARNING: may cause roots to disappear (happened once on Champaud)
+    rule insistance {
+        pattern {
+            X [lemma=re".*"];
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            C [lemma=re".*"];
+            A < B; B < C;
+            A.form = B.form; B.form = C.form;
+            X.lemma <> A.lemma;
+            X -> A;
+            e: X -> B;
+            f: X -> C
+            } without { X -[conj]-> A }
+        % GUARD: B already in a fixed expression with an ohlala head (oh la la):
+        % double-effect.ohlala puts it back, this rule takes it again, and Grew
+        % loops (Leveille 28924_u933 "oh là là là là ."). Only for ohlala's heads:
+        % UDPipe often attaches repeated oui / ouille as fixed, and those this
+        % rule should still turn into conj.
+        without { X [lemma="oh"|"houh"|"ah"]; X -[fixed]-> B }
+        without { B [fix=re".*,insistance\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            del_edge f;
+            add_edge A -[conj]-> B;
+            add_edge A -[conj]-> C;
+            B.fix = B.fix + "," + "insistance";
+        }
+    }
+
+    rule basic-conj {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            C [lemma=re".*"];
+            A < B; B < C;
+            A.form = B.form; B.form = C.form;
+            e: M -> B;
+            f: N -> C
+            } without { A -[conj]-> B; A -[conj]-> C; X -[conj]-> A }
+        % GUARD: e/f also match the root link; deleting it leaves no root
+        % (28131_u789 "non non non non ." ended in a 2>1>4>2 cycle)
+        without { M -[root]-> B }
+        without { N -[root]-> C }
+        % GUARD: A hangs off B or C (double-prep-1 made it their reparandum), so
+        % A -[conj]-> B|C is a cycle (Lyon 37028_u149 "demander à à à à à Yve")
+        without { B -> A }
+        without { C -> A }
+        without { B [fix=re".*,basic-conj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            del_edge f;
+            add_edge A -[conj]-> B;
+            add_edge A -[conj]-> C;
+            B.fix = B.fix + "," + "basic-conj";
+        }
+    }
+
+    rule basic-conj-follow {
+        pattern {
+            X [lemma=re".*"];
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            C [lemma=re".*"];
+            A < B; B < C; X << A;
+            A.form = B.form; B.form = C.form; X.form = A.form;
+            X -[conj]-> A;
+            e: M -> B;
+            f: N -> C
+        } without { X -[conj]-> B; X -[conj]-> C }
+        without { M -[root]-> B }   % GUARD: as in basic-conj
+        without { N -[root]-> C }
+        without { B [fix=re".*,basic-conj-follow\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            del_edge f;
+            add_edge X -[conj]-> B;
+            add_edge X -[conj]-> C;
+            B.fix = B.fix + "," + "basic-conj-follow";
+        }
+    }
+
+    rule basic-conj-bis {
+        pattern {
+            X [lemma=re".*"];
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            C [lemma=re".*"];
+            X < A; A < B; B < C;
+            X.form = A.form; A.form = B.form; B.form = C.form;
+            e: A -[conj]-> B;
+            f: A -[conj]-> C;
+            g: X -> A
+            } without { X -[conj]-> A }
+        without { A [fix=re".*,basic-conj-bis\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            del_edge f;
+            del_edge g;
+            add_edge X -[conj]-> A;
+            add_edge X -[conj]-> B;
+            add_edge X -[conj]-> C;
+            A.fix = A.fix + "," + "basic-conj-bis";
+        }
+    }
+
+    rule mix-fixed-conj {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            C [lemma=re".*"];
+            A < B; B < C;
+            A.form = B.form; B.form = C.form;
+            e: A -[fixed]-> B;
+            f: B -[conj]-> C;
+        }
+        without { B [fix=re".*,mix-fixed-conj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            del_edge f;
+            add_edge A -[conj]-> C;
+            B.fix = B.fix + "," + "mix-fixed-conj";
+        }
+    }
+
+    rule fake-nmod {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            C [lemma=re".*"];
+            A < B; B < C;
+            A.form = B.form; B.form = C.form;
+            e: A -[nmod]-> B;
+            f: B -[nmod]-> C;
+        }
+        without { B [fix=re".*,fake-nmod\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            del_edge f;
+            add_edge A -[conj]-> C;
+            B.fix = B.fix + "," + "fake-nmod";
+        }
+    }
+
+    rule non-3 {
+        % Geneva: alors alors alors .
+        pattern {
+            A [lemma="non"|"alors"|"ja"];
+            B [lemma="non"|"alors"|"ja"];
+            C [lemma="non"|"alors"|"ja"];
+            A < B; B < C;
+            e: C -> A;
+            f: X -[root]-> C
+        }
+        without { A [fix=re".*,non-3\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> C;
+            del_edge f;
+            add_edge X -[root]-> A;
+            A.fix = A.fix + "," + "non-3";
+        }
+    }
+
+    rule oui-mix {
+        % Champaud: c'est blond oui oui oui .
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            C [lemma=re".*"];
+            A < B; B < C;
+            A.form = B.form; B.form = C.form;
+            e: X -[discourse]-> C;
+        }
+        without { C [fix=re".*,oui-mix\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> C;
+            C.fix = C.fix + "," + "oui-mix";
+        }
+    }
+}
+
+package double-functional {
+
+    rule generic-double-det {
+        pattern {
+            e: X -[det]-> Det1;
+            X -[det]-> Det2;
+            Det1 [lemma="un"|"le"|"ce"|"son"];
+            Det2 [lemma="un"|"le"|"ce"|"son"];
+            Det1 < Det2
+        }
+        without { Det1 [fix=re".*,generic-double-det\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge Det2 -[reparandum]-> Det1;
+            Det1.fix = Det1.fix + "," + "generic-double-det";
+        }
+    }
+
+    rule double-cop {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            C -[cop]-> B;
+            e: C -[cop]-> A;
+        }
+        without { A [fix=re".*,double-cop\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "double-cop";
+        }
+    }
+
+    rule double-aux {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            C -[aux:tense]-> B;
+            e: C -[aux:tense]-> A;
+        }
+        without { A [fix=re".*,double-aux\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "double-aux";
+        }
+    }
+
+    rule double-verb {
+        % Champaud: on peut peut être
+        pattern {
+            A [lemma=re".*", upos="VERB", VerbForm="Fin"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            e: X -[root]-> A;
+            f: A -[xcomp]-> B
+        }
+        without { A [fix=re".*,double-verb\(,.*\)?"] }   % ONCE
+        commands {
+            shift A ==> B;
+            del_edge e;
+            del_edge f;
+            add_edge X -[root]-> B;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "double-verb";
+        }
+    }
+
+    rule double-prep-0 {
+        % Champaud: tu es dans dans quoi ?
+        pattern {
+            A [lemma=re".*", upos="ADP"];
+            B [lemma=re".*", upos="ADP"];
+            A < B;
+            A.form = B.form;
+            e: B -[case]-> A;
+        }
+        without { A [fix=re".*,double-prep-0\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "double-prep-0";
+        }
+    }
+
+    rule double-prep-1 {
+        % Champaud: tu es dans dans quoi ?
+        pattern {
+            A [lemma=re".*", upos="ADP"];
+            B [lemma=re".*", upos="ADP"];
+            A < B;
+            A.form = B.form;
+            e: X -> A;
+            C -[case]-> B
+        }
+        % GUARD: A heads C, the noun B marks, so B -[reparandum]-> A is a cycle
+        % (Paris 39191_u749 "un champ de de de maïs")
+        without { A -> C }
+        without { A [fix=re".*,double-prep-1\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "double-prep-1";
+        }
+    }
+
+    rule double-prep-2 {
+        % Champaud: avec avec quelque chose que tu sais pas dire .
+        pattern {
+            A [lemma=re".*", upos="ADP"];
+            B [lemma=re".*", upos="ADP"];
+            A < B;
+            A.form = B.form;
+            e: C -> A;
+            C -[case]-> B
+        }
+        without { A [fix=re".*,double-prep-2\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "double-prep-2";
+        }
+    }
+
+    rule lost-prep {
+        % Champaud: non non non il était content d'aller il dit pour à la place de de .
+        pattern {
+            A [upos="ADP"];
+            e: V -[nmod]-> A
+        }
+        without { A [fix=re".*,lost-prep\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge V -[orphan]-> A;
+            A.fix = A.fix + "," + "lost-prep";
+        }
+    }
+
+    rule double-sconj {
+        pattern {
+            A [lemma=re".*", upos="ADV"];
+            B [lemma=re".*", upos="SCONJ"];
+            A < B;
+            A.form = B.form;
+            e: A -[fixed]-> B;
+            f: V -[mark]-> A
+        }
+        without { A [fix=re".*,double-sconj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge V -[mark]-> B;
+            del_edge f;
+            add_edge B -[reparandum]-> A;
+            B.upos="ADV";
+            del_feat A.ExtPos;
+            A.fix = A.fix + "," + "double-sconj";
+        }
+    }
+}
+
+package mwe {
+    rule basic-onomatopea {
+        % Champaud: parce que ça fait broum broum .
+        pattern {
+            A [lemma="broum"];
+            A < B;
+            A.form = B.form;
+            e: A -> B;
+        }
+        without { A -[flat]-> B }   % GUARD: e matches its own result; logging fix
+                                    % makes each pass a new graph, so it looped
+        without { B [fix=re".*,basic-onomatopea\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[flat]-> B;
+            B.fix = B.fix + "," + "basic-onomatopea";
+        }
+    }
+
+    rule substantive-onomatopea-1 {
+        % Champaud: un petit ouah ouah .
+        pattern {
+            A -[det]-> D;
+            D [upos="DET"];
+            e: A -[conj|nmod]-> B;
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            A [upos="INTJ"|"X"|"NOUN"];
+            B [upos="INTJ"|"X"|"NOUN"];
+        }
+        without { B [fix=re".*,substantive-onomatopea-1\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[flat]-> B;
+            B.fix = B.fix + "," + "substantive-onomatopea-1";
+        }
+    }
+
+    rule substantive-onomatopea-2 {
+        % Champaud: voilà le petit ouah ouah .
+        pattern {
+            A -[det]-> D;
+            D [upos="DET"];
+            e: X -> B;
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            A [upos="INTJ"|"X"|"NOUN"];
+            B [upos="INTJ"|"X"|"NOUN"];
+        }
+        without { B [fix=re".*,substantive-onomatopea-2\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[flat]-> B;
+            B.fix = B.fix + "," + "substantive-onomatopea-2";
+        }
+    }
+
+    rule en-plus {
+        pattern {
+            A [lemma="en"];
+            B [lemma="plus"];
+            A < B;
+            X -[advmod]-> A;
+            e: X -[advmod]-> B
+        }
+        without { B [fix=re".*,en-plus\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[fixed]-> B;
+            A.ExtPos="ADV";
+            A.upos="ADP";
+            B.fix = B.fix + "," + "en-plus";
+        }
+    }
+}
+
+package double-effect {
+
+    rule ohlala {
+        % Champaud: ah si houh la la mais si la fois où la vague a failli t'emporter .
+        pattern {
+            A [lemma="oh"|"houh"|"ah"];
+            B [lemma="la"|"là"|"le"];
+            C [lemma="la"|"là"|"le"];
+            e: B -[conj|advmod]-> C;
+            A -[fixed]-> B;
+        }
+        without { A [fix=re".*,ohlala\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[fixed]-> C;
+            A.ExtPos = INTJ;
+            A.fix = A.fix + "," + "ohlala";
+        }
+    }
+
+    rule ohla {
+        pattern {
+            A [lemma="oh"|"houh"|"ah"];
+            B [lemma="la"|"là"|"le"];
+            A << B;
+            e: A -[advmod]-> B;
+        }
+        without { A [fix=re".*,ohla\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[fixed]-> B;
+            A.ExtPos = INTJ;
+            A.fix = A.fix + "," + "ohla";
+        }
+    }
+
+    rule adv-intj {
+        pattern {
+            A [lemma=re".*", upos="ADV"|"INTJ"];
+            B [lemma=re".*", upos="ADV"|"INTJ"|"X"];
+            A < B;
+            A.form = B.form;
+            e: X -[advmod]-> B;
+        } without { A -[conj]-> B; B [lemma = "la"|"là"|"oh"]; }
+        without { B -> A; }   % GUARD: A hangs off B, so A -[conj]-> B is a cycle
+        without { B [fix=re".*,adv-intj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            B.fix = B.fix + "," + "adv-intj";
+        }
+    }
+
+    rule double-adv-adj {
+        pattern {
+            A [lemma=re".*", upos="ADV"|"ADJ"];
+            B [lemma=re".*", upos="ADV"|"ADJ"];
+            A < B;
+            A.form = B.form;
+            e: A -[advmod|amod]-> B;
+        }
+        without { B [fix=re".*,double-adv-adj\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            B.fix = B.fix + "," + "double-adv-adj";
+        }
+    }
+
+    rule repeated-root {
+        % Champaud: ici ici .
+        pattern {
+            A [lemma=re".*", upos="ADV"|"INTJ"];
+            B [lemma=re".*", upos="ADV"|"INTJ"|"X"];
+            A < B;
+            A.form = B.form;
+            X -[root]-> B;
+            e: B -[^reparandum]-> A;
+        }
+        without { A [fix=re".*,repeated-root\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "repeated-root";
+        }
+    }
+
+    rule fake-flatname-0 {
+        pattern {
+            A [lemma=re".*", upos="PROPN"];
+            B [lemma=re".*", upos="PROPN"|"X"];
+            A < B;
+            A.form = B.form;
+            e: A -[flat:name]-> B
+        }
+        without { A [fix=re".*,fake-flatname-0\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            shift A ==> B;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "fake-flatname-0";
+        }
+    }
+
+    rule voila {
+        pattern {
+            A [lemma="voilà"];
+            B [lemma="voilà"];
+            A < B;
+            e: A -> B;
+        } without {
+            A -[conj]-> B
+        }
+        without { B [fix=re".*,voila\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            B.fix = B.fix + "," + "voila";
+        }
+    }
+
+    rule double-verb-1 {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            e: A -[xcomp]-> B;
+        } without { A -[nsubj]-> X }
+        without { B [fix=re".*,double-verb-1\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            B.fix = B.fix + "," + "double-verb-1";
+        }
+    }
+
+    rule double-verb-2 {
+        pattern {
+            A [lemma=re".*"];
+            B [lemma=re".*"];
+            A < B;
+            A.form = B.form;
+            e: B -[nsubj]-> A;
+        }
+        without { A [fix=re".*,double-verb-2\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge B -[reparandum]-> A;
+            A.fix = A.fix + "," + "double-verb-2";
+        }
+    }
+
+    rule repeated-noun {
+        % probably on purpose
+        % Champaud: attention attention .
+        pattern {
+            A [lemma="attention"|"maman"|"babor"];
+            B [lemma="attention"|"maman"|"babor"];
+            A < B;
+            A.form = B.form;
+            e: A -[nmod]-> B;
+        }
+        without { B [fix=re".*,repeated-noun\(,.*\)?"] }   % ONCE
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> B;
+            B.fix = B.fix + "," + "repeated-noun";
+        }
+    }
+}
+
+package damage-control {
+    rule reroot-conj {
+        pattern {
+            A -[conj]-> B;
+            e: B -[conj]-> C;
+        }
+        % GUARD: A hangs off C (UDPipe often attaches an earlier copy to a later
+        % one), so A -[conj]-> C is a cycle (Paris 42916_u587 "Antoine non non non")
+        without { C -> A }
+        commands {
+            del_edge e;
+            add_edge A -[conj]-> C;
+            C.fix = C.fix + "," + "reroot-conj";
+        }
+    }
+}
+
+
 % ============================================================
 % strategy
 % ============================================================
 
 % Onf = One normal form (Apply rules repeatedly until stable)
 % Alt = Try all rules in the list
+% Seq = the steps in this order
+
+% Parts 1-2. init_fix_misc first, on its own: every rule that appends to V.fix
+% needs the fix to exist already, and inside a single Alt nothing says it does.
+strat pipeline_corrections {
+  Seq (
+    Onf (init_fix_misc),
+    Onf (Alt (
+      duplicate_complements,
+      oblique,
+      amalgames,
+      dislocation,
+    ))
+  )
+}
+
+% Part 3, the source file's strategy (Iter over the packages in this order),
+% with one change: each step Picks one rule application. The source's Try
+% explores every order of application, which returned up to 2 analyses per
+% sentence on the gold (childes.py silently keeps the first) and, on the full
+% French silver, took some sentences with long repetitions (mh x7, ouaf x5)
+% into a branch that never ends: Grew stops at 10,000 steps and fails the
+% whole file. (Onf is not an option: over a Seq of Try steps it returns the
+% graph unchanged.)
+strat gold_corrections {
+  Seq (
+    Onf (fix_logging.init_all),
+    Iter (Seq (
+      Onf (change-pos),
+      Pick (Try (dislocated-todo)),
+      Pick (Try (triplets)),
+      Pick (Try (double-functional)),
+      Pick (Try (double-effect)),
+      Pick (Try (mwe)),
+      Pick (Try (damage-control))
+    )),
+    Onf (fix_logging.clean)
+  )
+}
+
 strat main {
-  Onf (Alt (
-    init_fix_misc,
-    duplicate_complements,
-    oblique,
-    amalgames,
-    dislocation,
-  ))
+  Seq (pipeline_corrections, gold_corrections)
 }
 
 % ============================================================
