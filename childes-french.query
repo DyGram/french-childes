@@ -1,6 +1,6 @@
 %--------------------------------------------------------
 % Rules for graphs created with UDPipe (Default French)
-% AS 29.12.25
+% 23.09.26
 %
 % Rules are ranked by specificity (query stops at first match per attribute)
 % ==> run dql.py with flag --first_rule  (or use childes-pipeline.sh)
@@ -498,4 +498,283 @@ pattern {
 }
 
 
-exit 
+%========================================================
+% DATIVE CUES (case-selection, grew/dative-cues.dql.query)
+%   Codings by form and position of the clitic, which a learner can perceive,
+%   in addition to the grammatical functions above, which are parser decisions
+%   based on the adult lexicon.
+%   French clitic order: (subj) ne me/te/se/nous/vous le/la/les lui/leur y en V
+%
+%   --first_rule blocks on (attribute, addlemma node). In compound tenses the
+%   clitic precedes the auxiliary, and the plain rule would code the AUX row
+%   (avoir/être). The *aux rules therefore come first: they code the main verb
+%   and block the plain rule for the same clitic.
+%
+%   Grew syntax: re"..." is OCaml Str (( | ) are literal), and /.../ cannot
+%   contain an apostrophe, so forms are given as lists: form="le"|"la"|"l'".
+%========================================================
+
+%--------------------------------------------------------
+% cl_pair: both object clitics in one cluster (ditransitive): le lui donne
+%--------------------------------------------------------
+
+% coding attribute=cl_pair value=acc_dat_aux node=V addlemma=PROdat
+pattern {
+    V [upos="VERB"];
+    AUX [upos="AUX"];
+    V -[1=aux]-> AUX;
+    PROacc [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
+    PROdat [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    PROacc < PROdat;
+    PROdat < AUX;
+}
+
+% coding attribute=cl_pair value=acc_dat node=V addlemma=PROdat
+pattern {
+    V [upos=/AUX|VERB/];
+    PROacc [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
+    PROdat [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    PROacc < PROdat;
+    PROdat < V;
+}
+
+%--------------------------------------------------------
+% cl_acc: object clitic immediately before the verb or its auxiliary
+%   cl3 = le/la/les/l' (accusative by form)
+%   cl12 = me/te/nous/vous (case ambiguous); nous/vous are excluded where
+%   they are subjects (vous nsubj is the majority reading before a verb)
+%--------------------------------------------------------
+
+% coding attribute=cl_acc value=cl3aux node=V addlemma=PRO
+pattern {
+    V [upos="VERB"];
+    AUX [upos="AUX"];
+    V -[1=aux]-> AUX;
+    PRO [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
+    PRO < AUX;
+}
+
+% coding attribute=cl_acc value=cl3 node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
+    PRO < V;
+}
+
+% coding attribute=cl_acc value=cl12aux node=V addlemma=PRO
+pattern {
+    V [upos="VERB"];
+    AUX [upos="AUX"];
+    V -[1=aux]-> AUX;
+    PRO [form="me"|"te"|"nous"|"vous"|"m'"|"t'"|"Me"|"Te"|"Nous"|"Vous"|"M'"|"T'", PronType="Prs"];
+    PRO < AUX;
+}
+without {
+    V -[1=nsubj]-> PRO;   % X below cannot be V: Grew matches injectively
+}
+without {
+    X -[1=nsubj]-> PRO;
+}
+
+% coding attribute=cl_acc value=cl12 node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [form="me"|"te"|"nous"|"vous"|"m'"|"t'"|"Me"|"Te"|"Nous"|"Vous"|"M'"|"T'", PronType="Prs"];
+    PRO < V;
+}
+without {
+    V -[1=nsubj]-> PRO;   % X below cannot be V: Grew matches injectively
+}
+without {
+    X -[1=nsubj]-> PRO;
+}
+
+%--------------------------------------------------------
+% cl_dat: dative clitic lui/leur immediately before the verb or its auxiliary
+%   (strong lui as subject excluded)
+%--------------------------------------------------------
+
+% coding attribute=cl_dat value=cl3aux node=V addlemma=PRO
+pattern {
+    V [upos="VERB"];
+    AUX [upos="AUX"];
+    V -[1=aux]-> AUX;
+    PRO [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    PRO < AUX;
+}
+without {
+    V -[1=nsubj]-> PRO;   % X below cannot be V: Grew matches injectively
+}
+without {
+    X -[1=nsubj]-> PRO;
+}
+
+% coding attribute=cl_dat value=cl3 node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    PRO < V;
+}
+without {
+    V -[1=nsubj]-> PRO;   % X below cannot be V: Grew matches injectively
+}
+without {
+    X -[1=nsubj]-> PRO;
+}
+
+%--------------------------------------------------------
+% cl_adv: y / en immediately before the verb or its auxiliary
+%--------------------------------------------------------
+
+% coding attribute=cl_adv value=yaux node=V addlemma=PRO
+pattern {
+    V [upos="VERB"];
+    AUX [upos="AUX"];
+    V -[1=aux]-> AUX;
+    PRO [form="y"|"Y"];
+    PRO < AUX;
+}
+
+% coding attribute=cl_adv value=y node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [form="y"|"Y"];
+    PRO < V;
+}
+
+% coding attribute=cl_adv value=enaux node=V addlemma=PRO
+pattern {
+    V [upos="VERB"];
+    AUX [upos="AUX"];
+    V -[1=aux]-> AUX;
+    PRO [form="en"|"En", upos="PRON"];
+    PRO < AUX;
+}
+
+% coding attribute=cl_adv value=en node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [form="en"|"En", upos="PRON"];
+    PRO < V;
+}
+
+%--------------------------------------------------------
+% cl_post: postverbal clitic of an affirmative imperative: donne-lui, mets-le
+%   Postverbal lui is ambiguous with the strong pronoun (regarde lui il dort):
+%   keep separate from the preverbal cluster. The tokeniser sometimes keeps
+%   the hyphen (-le, -moi).
+%--------------------------------------------------------
+
+% coding attribute=cl_post value=dat node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/, Mood="Imp"];
+    PRO [form="lui"|"leur"|"-lui"|"-leur", PronType="Prs"];
+    V < PRO;
+}
+
+% coding attribute=cl_post value=acc node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/, Mood="Imp"];
+    PRO [form="le"|"la"|"les"|"-le"|"-la"|"-les", PronType="Prs"];
+    V < PRO;
+}
+
+%--------------------------------------------------------
+% datframe: frame of the dative clitic
+%   with direct object or clausal complement = evidence for a ditransitive,
+%   without = evidence for a monotransitive dative (je lui dis is both)
+%--------------------------------------------------------
+
+% coding attribute=datframe value=ditr node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    V -[iobj]-> PRO;
+    V -[obj|ccomp|xcomp]-> X;
+}
+
+% coding attribute=datframe value=mono node=V addlemma=PRO
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    V -[iobj]-> PRO;
+}
+without {
+    V -[obj|ccomp|xcomp]-> X;
+}
+
+%--------------------------------------------------------
+% a_nom: internal form of the à-phrase (formal correlate of animacy)
+%   person-type: à Paul, à lui, à ta maman, à maman
+%   determined:  à la maison, au lit (au/aux count as definite)
+%   ranked from specific to general
+%--------------------------------------------------------
+
+% coding attribute=a_nom value=propn node=V addlemma=N
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos="PROPN"];
+    V -[1=obl]-> N;
+    N -[case]-> P;
+    P [form="à"|"au"|"aux"|"À"|"Au"|"Aux"];
+}
+
+% coding attribute=a_nom value=pron node=V addlemma=N
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos="PRON", form="moi"|"toi"|"lui"|"elle"|"nous"|"vous"|"eux"|"elles"];
+    V -[1=obl]-> N;
+    N -[case]-> P;
+    P [form="à"|"À"];
+}
+
+% coding attribute=a_nom value=poss node=V addlemma=N
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos="NOUN"];
+    V -[1=obl]-> N;
+    N -[case]-> P;
+    P [form="à"|"au"|"aux"|"À"|"Au"|"Aux"];
+    N -[det]-> D;
+    D [Poss="Yes"];
+}
+
+% coding attribute=a_nom value=bare node=V addlemma=N
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos="NOUN"];
+    V -[1=obl]-> N;
+    N -[case]-> P;
+    P [form="à"|"au"|"aux"|"À"|"Au"|"Aux"];
+}
+without {
+    N -[det]-> D;
+}
+
+% coding attribute=a_nom value=det node=V addlemma=N
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos="NOUN"];
+    V -[1=obl]-> N;
+    N -[case]-> P;
+    P [form="à"|"au"|"aux"|"À"|"Au"|"Aux"];
+    N -[det]-> D;
+}
+
+%--------------------------------------------------------
+% v_edge: verb followed by nothing but punctuation
+%   An utterance that ends at the verb is missing context, not a verb without
+%   complement (binary version of n_after; counts are not expressible in Grew)
+%--------------------------------------------------------
+
+% coding attribute=v_edge value=final node=V addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+}
+without {
+    V << X;
+    X [upos=/NOUN|PROPN|PRON|VERB|AUX|ADP|DET|ADJ|ADV|NUM|SCONJ|CCONJ|INTJ|PART|X/];
+}
+
+
+exit
