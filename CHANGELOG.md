@@ -5,6 +5,48 @@ summary per version; this file has the full reasoning, evidence, and examples
 behind each design decision, for anyone who needs to know *why* something works
 the way it does before changing it.
 
+## Unreleased - Clitics of causative and perception constructions leave the dative cues
+
+The DATIVE CUES codings of `childes-french.query` (`cl_acc`, `cl_dat`,
+`cl_pair`, `datframe`) counted the clitic of a causative or perception
+construction as an object of the infinitive: *il le fait tomber*, *fais-le
+tomber*, *laisse-le dormir*, *regarde-la tomber*, *fais-lui goûter*. The clitic
+there is the causee, not an object of *tomber* or a dative of *goûter*. In the
+input speech of all French projects this concerned 698 of 23,600 accusative
+clitics and 104 of 3,953 dative clitics, and for 50 intransitive verbs (*rire*,
+*sauter*, *danser*, *pleurer* ...) it was the only accusative evidence.
+
+Two mechanisms produced the error. The `*aux` rules tested `V -[1=aux]-> AUX`,
+which also matches `aux:caus`, the relation by which the parser attaches
+causative *faire* to the infinitive; a clitic before *fait* therefore counted as
+a clitic "before the auxiliary of *tomber*". And in *fais-le tomber* the clitic
+directly precedes the infinitive, so the plain rule fired.
+
+The `*aux` rules now accept only `aux:tense|aux:pass`. An exclusion by
+`without` is not enough for *il le fait tomber*: Grew matches injectively, so a
+node introduced in `without` can never be the node the pattern has already
+bound as `AUX`. The `without` clauses cover the remaining cases: an infinitive
+with an `aux:caus` dependent (*il l'a fait tomber*, *fais-le tomber*), and an
+infinitive that is the `xcomp/ccomp` of *faire, laisser, voir, regarder,
+entendre, sentir, écouter*. The infinitive condition matters: without it,
+*regarde, il t'a amené un livre* and *ça fait longtemps qu'on l'a pas lu* lost
+their clitic. The plain rules also keep causative *faire* and the tense
+auxiliary of a causative out of the AUX rows.
+
+Form and position cannot tell the causee from an object of the infinitive
+(*fais-le tomber* against *fais-la voir*), and the parser's causee label is
+unreliable (*tomber*: 64 `obj:agent`, 35 plain `obj`). The excluded clitics are
+therefore not discarded but recorded on the infinitive in a new attribute
+`cl_caus` (values `acc3`, `dat3`, `cl12`); the analysis decides how to use them.
+case-selection adds them back only to verbs that qualify on independent
+evidence, so that *fais-la voir* still counts for *voir* and *fais-le tomber*
+does not count for *tomber*.
+
+Checked with `dql.py` on 22 test sentences and on the Paris project against the
+previous query: of the 425 codings lost, 423 moved to `cl_caus`, one sat on an
+auxiliary row and one is a parse error; no coding appears outside `cl_caus` that
+was not there before.
+
 ## Unreleased - CHAT markup no longer leaks into the CoNLL-U
 
 Three classes of CHAT markup were reaching the token stream, because the rules

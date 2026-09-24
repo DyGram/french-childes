@@ -1,6 +1,6 @@
 %--------------------------------------------------------
 % Rules for graphs created with UDPipe (Default French)
-% 23.09.26
+% 24.09.26
 %
 % Rules are ranked by specificity (query stops at first match per attribute)
 % ==> run dql.py with flag --first_rule  (or use childes-pipeline.sh)
@@ -515,6 +515,21 @@ pattern {
 %========================================================
 
 %--------------------------------------------------------
+% Causative and perception constructions (il le fait tomber, fais-le tomber,
+% laisse-le dormir, regarde-la tomber, fais-lui goûter): the clitic is the
+% causee or an object of the infinitive, and form and position do not tell
+% which (fais-le tomber against fais-la voir). The parser attaches causative
+% faire to the infinitive as aux:caus, and its causee label obj:agent is
+% unreliable (tomber: 64 obj:agent, 35 obj). These clitics are therefore kept
+% out of cl_pair, cl_acc and cl_dat and recorded on the infinitive as cl_caus;
+% case-selection/lib/cues.R adds them back to verbs that are accusative on
+% independent evidence. The *aux rules accept only aux:tense and aux:pass:
+% Grew matches injectively, so a `without` clause cannot exclude the node the
+% pattern has already bound as AUX (il le fait tomber); the `without` clauses
+% cover the remaining cases (il l'a fait tomber, fais-le tomber).
+%--------------------------------------------------------
+
+%--------------------------------------------------------
 % cl_pair: both object clitics in one cluster (ditransitive): le lui donne
 %--------------------------------------------------------
 
@@ -522,11 +537,19 @@ pattern {
 pattern {
     V [upos="VERB"];
     AUX [upos="AUX"];
-    V -[1=aux]-> AUX;
+    V -[aux:tense|aux:pass]-> AUX;   % not aux:caus: faire is no tense auxiliary
     PROacc [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
     PROdat [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
     PROacc < PROdat;
     PROdat < AUX;
+}
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
 }
 
 % coding attribute=cl_pair value=acc_dat node=V addlemma=PROdat
@@ -536,6 +559,21 @@ pattern {
     PROdat [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
     PROacc < PROdat;
     PROdat < V;
+}
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
+}
+without {
+    H -[aux:caus]-> V;
+}
+without {
+    H -[1=aux]-> V;
+    H -[aux:caus]-> CAUS;
 }
 
 %--------------------------------------------------------
@@ -549,9 +587,17 @@ pattern {
 pattern {
     V [upos="VERB"];
     AUX [upos="AUX"];
-    V -[1=aux]-> AUX;
+    V -[aux:tense|aux:pass]-> AUX;   % not aux:caus: faire is no tense auxiliary
     PRO [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
     PRO < AUX;
+}
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
 }
 
 % coding attribute=cl_acc value=cl3 node=V addlemma=PRO
@@ -560,12 +606,27 @@ pattern {
     PRO [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
     PRO < V;
 }
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
+}
+without {
+    H -[aux:caus]-> V;
+}
+without {
+    H -[1=aux]-> V;
+    H -[aux:caus]-> CAUS;
+}
 
 % coding attribute=cl_acc value=cl12aux node=V addlemma=PRO
 pattern {
     V [upos="VERB"];
     AUX [upos="AUX"];
-    V -[1=aux]-> AUX;
+    V -[aux:tense|aux:pass]-> AUX;   % not aux:caus: faire is no tense auxiliary
     PRO [form="me"|"te"|"nous"|"vous"|"m'"|"t'"|"Me"|"Te"|"Nous"|"Vous"|"M'"|"T'", PronType="Prs"];
     PRO < AUX;
 }
@@ -574,6 +635,14 @@ without {
 }
 without {
     X -[1=nsubj]-> PRO;
+}
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
 }
 
 % coding attribute=cl_acc value=cl12 node=V addlemma=PRO
@@ -588,6 +657,21 @@ without {
 without {
     X -[1=nsubj]-> PRO;
 }
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
+}
+without {
+    H -[aux:caus]-> V;
+}
+without {
+    H -[1=aux]-> V;
+    H -[aux:caus]-> CAUS;
+}
 
 %--------------------------------------------------------
 % cl_dat: dative clitic lui/leur immediately before the verb or its auxiliary
@@ -598,7 +682,7 @@ without {
 pattern {
     V [upos="VERB"];
     AUX [upos="AUX"];
-    V -[1=aux]-> AUX;
+    V -[aux:tense|aux:pass]-> AUX;   % not aux:caus: faire is no tense auxiliary
     PRO [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
     PRO < AUX;
 }
@@ -607,6 +691,14 @@ without {
 }
 without {
     X -[1=nsubj]-> PRO;
+}
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
 }
 
 % coding attribute=cl_dat value=cl3 node=V addlemma=PRO
@@ -621,6 +713,135 @@ without {
 without {
     X -[1=nsubj]-> PRO;
 }
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
+}
+without {
+    H -[aux:caus]-> V;
+}
+without {
+    H -[1=aux]-> V;
+    H -[aux:caus]-> CAUS;
+}
+
+%--------------------------------------------------------
+% cl_caus: clitics in causative and perception constructions, coded on the
+%   infinitive. The clitic is attached to the infinitive, or, with laisser
+%   and perception verbs, to the matrix verb while immediately preceding the
+%   infinitive (regarde-la tomber). A clitic before the matrix verb and
+%   attached to it (il la regarde tomber) is its object and stays in cl_acc.
+%--------------------------------------------------------
+
+% coding attribute=cl_caus value=acc3 node=V addlemma=PRO
+pattern {
+    V [upos="VERB"];
+    V -[aux:caus]-> CAUS;
+    PRO [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
+    V -> PRO;
+    PRO << V;
+}
+
+% coding attribute=cl_caus value=acc3 node=V addlemma=PRO
+pattern {
+    V [upos="VERB", VerbForm=Inf];
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;
+    PRO [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
+    V -> PRO;
+    PRO << V;
+}
+
+% coding attribute=cl_caus value=acc3 node=V addlemma=PRO
+pattern {
+    V [upos="VERB", VerbForm=Inf];
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;
+    PRO [form="le"|"la"|"les"|"l'"|"Le"|"La"|"Les"|"L'", PronType="Prs"];
+    M -> PRO;
+    PRO < V;
+}
+
+% coding attribute=cl_caus value=dat3 node=V addlemma=PRO
+pattern {
+    V [upos="VERB"];
+    V -[aux:caus]-> CAUS;
+    PRO [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    V -> PRO;
+    PRO << V;
+}
+
+% coding attribute=cl_caus value=dat3 node=V addlemma=PRO
+pattern {
+    V [upos="VERB", VerbForm=Inf];
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;
+    PRO [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    V -> PRO;
+    PRO << V;
+}
+
+% coding attribute=cl_caus value=dat3 node=V addlemma=PRO
+pattern {
+    V [upos="VERB", VerbForm=Inf];
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;
+    PRO [form="lui"|"leur"|"Lui"|"Leur", PronType="Prs"];
+    M -> PRO;
+    PRO < V;
+}
+
+% coding attribute=cl_caus value=cl12 node=V addlemma=PRO
+pattern {
+    V [upos="VERB"];
+    V -[aux:caus]-> CAUS;
+    PRO [form="me"|"te"|"nous"|"vous"|"m'"|"t'"|"Me"|"Te"|"Nous"|"Vous"|"M'"|"T'", PronType="Prs"];
+    V -> PRO;
+    PRO << V;
+}
+without {
+    V -[1=nsubj]-> PRO;   % X below cannot be V: Grew matches injectively
+}
+without {
+    X -[1=nsubj]-> PRO;
+}
+
+% coding attribute=cl_caus value=cl12 node=V addlemma=PRO
+pattern {
+    V [upos="VERB", VerbForm=Inf];
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;
+    PRO [form="me"|"te"|"nous"|"vous"|"m'"|"t'"|"Me"|"Te"|"Nous"|"Vous"|"M'"|"T'", PronType="Prs"];
+    V -> PRO;
+    PRO << V;
+}
+without {
+    V -[1=nsubj]-> PRO;   % X below cannot be V: Grew matches injectively
+}
+without {
+    X -[1=nsubj]-> PRO;
+}
+
+% coding attribute=cl_caus value=cl12 node=V addlemma=PRO
+pattern {
+    V [upos="VERB", VerbForm=Inf];
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;
+    PRO [form="me"|"te"|"nous"|"vous"|"m'"|"t'"|"Me"|"Te"|"Nous"|"Vous"|"M'"|"T'", PronType="Prs"];
+    M -> PRO;
+    PRO < V;
+}
+without {
+    V -[1=nsubj]-> PRO;   % X below cannot be V: Grew matches injectively
+}
+without {
+    X -[1=nsubj]-> PRO;
+}
+
 
 %--------------------------------------------------------
 % cl_adv: y / en immediately before the verb or its auxiliary
@@ -692,6 +913,14 @@ pattern {
     V -[iobj]-> PRO;
     V -[obj|ccomp|xcomp]-> X;
 }
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
+}
 
 % coding attribute=datframe value=mono node=V addlemma=PRO
 pattern {
@@ -701,6 +930,14 @@ pattern {
 }
 without {
     V -[obj|ccomp|xcomp]-> X;
+}
+without {
+    V -[aux:caus]-> CAUS;       % il le fait tomber, fais-le tomber
+}
+without {
+    M [lemma="faire"|"laisser"|"voir"|"regarder"|"entendre"|"sentir"|"écouter"];
+    M -[xcomp|ccomp]-> V;       % laisse-le dormir, regarde-la tomber
+    V [VerbForm=Inf];           % not: regarde, il t'a amené un livre
 }
 
 %--------------------------------------------------------
