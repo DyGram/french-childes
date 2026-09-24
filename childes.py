@@ -72,6 +72,7 @@ def cleanUtt(s):
     # (<nose spray> as ‹nose spray›, 35945 in the North American English data).
     # Normalised first, so every <...> rule below applies to them too.
     s = s.replace('‹', '<').replace('›', '>')
+    s = re.sub(r'\s*\[[<>]\d*\]', ' ', s) # Remove [<] (Lyon and Paris)
     # CHAT's omission markers. In '0the' / '0il' / '0ne' the omitted word itself
     # is written out and the rule below restores it. '0w', '0x' and '0zero' are
     # placeholders for an omission whose form is NOT recoverable, so restoring
@@ -135,7 +136,8 @@ def cleanUtt(s):
     s = re.sub('↑', '', s)                        # Remove specific suffixes like ↑
     s = re.sub(r'&[\S]+', '', s)                  # Remove phonological fragments like &mm, event codes like &=laugh
     # added after v4.4
-    
+    s = re.sub(r"(?<=[^\W\d_])\(([A-Za-zÀ-ÿ'’_ \-]+)\)", r'\1', s) # s(i il)
+    s = re.sub(r"([A-Z])_([A-Z])", r"\1\2", s)    # MSH
     # must run AFTER the &-removal above: &=word's '=' would otherwise be turned into a
     # space first, splitting it into a bare '&' plus a stray real-looking word ('& laugh')
     s = re.sub(r'[_=]', ' ', s)                   # Replace _ and = with space
@@ -930,6 +932,9 @@ class ChatProcessor:
             # language now; only the event codes are handled here.
             s = re.sub(r" ?&=\w+", r"", s)
             s = re.sub(r'\s+', ' ', s).strip()
+        elif hasattr(self, 'language') and re.search(r'fra|french', self.language):
+            s = re.sub(r'([^\W\d_]):+', r'\1', s)
+            s = re.sub(r'\s+', ' ', s).strip()           
         return s
 
     def split_german_contractions(self, s, mwt, misc):
