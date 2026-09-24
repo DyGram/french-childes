@@ -9,8 +9,12 @@ with one or more expectations in its comment lines:
     # expect_fix = aller_a          the rule fires: its name is added to a fix= in MISC
     # expect_no_fix = aller_a       the rule does not fire on this sentence
     # expect_tree = valid           the result is one rooted tree without cycles
+    # expect_words = de le chat     the word forms after the rewrite, space-separated
+    # expect_mwt = 2-3 du           the multiword-token lines after the rewrite, "; "-separated
 
 Every sentence is also checked for a valid tree, whatever it declares.
+expect_words and expect_mwt pin down the tokenisation that package amalgames
+produces, which childes.py relies on when it re-grids the table.
 
 Why each kind exists (French CHILDES, Sept 2026):
 - expect_fix: a rule that never fires is silent - Grew does not warn.
@@ -124,6 +128,17 @@ def main():
             checked += 1
             if rule in tags:
                 failures.append(f"{sid}: {rule} fired but should not")
+        cols = [l.split("\t") for l in out]
+        for want in values(comments, "expect_words"):
+            checked += 1
+            got = " ".join(c[1] for c in cols if c[0].isdigit())
+            if got != want:
+                failures.append(f"{sid}: words are '{got}', expected '{want}'")
+        for want in values(comments, "expect_mwt"):
+            checked += 1
+            got = "; ".join(f"{c[0]} {c[1]}" for c in cols if "-" in c[0])
+            if got != want:
+                failures.append(f"{sid}: multiword tokens are '{got}', expected '{want}'")
         checked += 1
         problem = tree_problem(out)
         if problem:

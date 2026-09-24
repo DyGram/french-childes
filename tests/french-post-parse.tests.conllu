@@ -214,6 +214,8 @@
 
 # sent_id = fires_de_verb_complement
 # expect_fix = de_verb_complement
+# expect_words = quand on parle de le loup !
+# expect_mwt = 4-5 du
 # note = Paris 42932_u1357
 # text = quand on parle du loup !
 1	quand	quand	SCONJ	_	_	3	mark	_	_
@@ -438,6 +440,8 @@
 
 # sent_id = fires_fuse_au
 # expect_fix = fuse_au
+# expect_words = à le citron ?
+# expect_mwt = 1-2 au
 # note = Paris 42883_u145
 # text = au citron ?
 1	à	à	ADP	_	_	3	case	_	_
@@ -447,6 +451,8 @@
 
 # sent_id = fires_fuse_aux
 # expect_fix = fuse_aux
+# expect_words = à les fleurs !
+# expect_mwt = 1-2 aux
 # note = Paris 42882_u934
 # text = aux fleurs !
 1	à	à	ADP	_	_	3	case	_	_
@@ -589,6 +595,8 @@
 
 # sent_id = fires_split_des
 # expect_fix = split_des
+# expect_words = berk de les poils .
+# expect_mwt = 2-3 des
 # note = Paris 42891_u736
 # text = berk des poils .
 1	berk	berk	NOUN	_	Number=Sing	0	root	_	_
@@ -598,6 +606,8 @@
 
 # sent_id = fires_split_du
 # expect_fix = split_du
+# expect_words = fruits de le verger .
+# expect_mwt = 2-3 du
 # note = Paris 42910_u1591
 # text = fruits du verger .
 1	fruits	fruit	NOUN	_	Number=Plur	0	root	_	_
