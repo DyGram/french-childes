@@ -1,0 +1,692 @@
+# sent_id = regression_oh_moi_le
+# expect_no_fix = two_object_pronouns
+# note = Paris 39185_u927. Head is an INTJ with no fix: appending to V.fix failed the whole Paris file (289,343 sentences uncorrected).
+# text = oh moi le .
+1	oh	oh	INTJ	_	_	0	root	_	_
+2	moi	moi	PRON	_	Emph=Yes|Number=Sing|Person=1|PronType=Prs	1	obj	_	_
+3	le	le	PRON	_	Case=Acc|Emph=No|Gender=Masc|Number=Sing|Person=3|PronType=Prs	1	obj	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = regression_non_non_non_non
+# expect_no_fix = basic-conj
+# note = Champaud 28131_u789. basic-conj took the root link of token 4 as a head to replace: no root, cycle 2>1>4>2.
+# text = non non non non .
+1	non	non	ADV	_	Polarity=Neg	4	advmod	_	_
+2	non	non	ADV	_	Polarity=Neg	1	fixed	_	_
+3	non	non	ADV	_	Polarity=Neg	1	fixed	_	_
+4	non	non	ADV	_	Polarity=Neg	0	root	_	_
+5	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = regression_doucement_doucement
+# expect_no_fix = adv-intj
+# note = Champaud 28133_u311. Token 5 hangs off token 6, so 5 -[conj]-> 6 was a cycle.
+# text = oh Grégoire oh là doucement doucement !
+1	oh	oh	INTJ	_	_	6	discourse	_	_
+2	Grégoire	Grégoire	PROPN	_	_	1	fixed	_	_
+3	oh	oh	INTJ	_	_	0	root	_	_
+4	là	là	ADV	_	_	6	advmod	_	_
+5	doucement	doucement	ADV	_	_	6	advmod	_	_
+6	doucement	doucement	ADV	_	_	3	advmod	_	_
+7	!	!	PUNCT	_	_	3	punct	_	_
+
+# sent_id = regression_loop_broum
+# expect_tree = valid
+# note = Champaud 28130_u1025. basic-onomatopea matches its own output (A -> B becomes A -[flat]-> B); once firings are logged it looped past 10,000 steps.
+# text = parce que ça fait broum broum .
+1	parce	parce	ADV	_	ExtPos=SCONJ	4	mark	_	_
+2	que	que	SCONJ	_	_	1	fixed	_	_
+3	ça	ça	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	4	nsubj	_	_
+4	fait	faire	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+5	broum	broum	NOUN	_	Number=Sing	4	obj	_	_
+6	broum	broum	NOUN	_	Number=Sing	5	appos	_	_
+7	.	.	PUNCT	_	_	4	punct	_	_
+
+# sent_id = regression_loop_oh_la_la
+# expect_tree = valid
+# note = Leveille 28924_u933. insistance and ohlala took the repeated là back and forth.
+# text = oh là là là là .
+1	oh	oh	INTJ	_	_	0	root	_	_
+2	là	là	ADV	_	_	1	fixed	_	_
+3	là	là	ADV	_	_	1	advmod	_	_
+4	là	là	ADV	_	_	1	advmod	_	_
+5	là	là	ADV	_	_	1	advmod	_	_
+6	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = regression_loop_a_a_a
+# expect_tree = valid
+# note = Lyon 37028_u149. basic-conj, reroot-conj and double-prep-1 undid each other every round.
+# text = pour l'instant , là celui-là il faut demander à à à à à Yve où ils sont ces livres là .
+1	pour	pour	ADP	_	ExtPos=ADV	9	advmod	_	_
+2	l'	le	DET	_	Definite=Def|Number=Sing|PronType=Art	1	fixed	_	SpaceAfter=No
+3	instant	instant	NOUN	_	Number=Sing	1	fixed	_	_
+4	,	,	PUNCT	_	_	1	punct	_	_
+5	là	là	ADV	_	_	9	advmod	_	_
+6	celui	celui	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	9	dislocated	_	SpaceAfter=No
+7	-là	là	ADV	_	_	6	advmod	_	_
+8	il	lui	PRON	_	Case=Nom|Emph=No|Gender=Masc|Number=Sing|Person=3|PronType=Prs	9	expl:subj	_	_
+9	faut	falloir	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+10	demander	demander	VERB	_	VerbForm=Inf	9	ccomp	_	_
+11	à	à	ADP	_	_	16	case	_	_
+12	à	à	ADP	_	_	16	case	_	_
+13	à	à	ADP	_	_	16	case	_	_
+14	à	à	ADP	_	_	16	case	_	_
+15	à	à	ADP	_	_	16	case	_	_
+16	Yve	Yve	PROPN	_	_	10	obl:arg	_	_
+17	où	où	PRON	_	PronType=Rel	21	obl:mod	_	_
+18	ils	lui	PRON	_	Case=Nom|Emph=No|Gender=Masc|Number=Plur|Person=3|PronType=Prs	21	nsubj	_	_
+19	sont	être	AUX	_	Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin	21	cop	_	_
+20	ces	ce	DET	_	Number=Plur|PronType=Dem	21	det	_	_
+21	livres	livre	NOUN	_	Number=Plur	16	acl:relcl	_	_
+22	là	là	ADV	_	_	21	advmod	_	_
+23	.	.	PUNCT	_	_	9	punct	_	_
+
+# sent_id = regression_loop_non_x6
+# expect_tree = valid
+# note = Lyon 36965_u346. basic-conj and reroot-conj regrouped the same words every round.
+# text = non , non non non non non , une photo c'est pas .
+1	non	non	ADV	_	Polarity=Neg	10	discourse	_	_
+2	,	,	PUNCT	_	_	3	punct	_	_
+3	non	non	ADV	_	Polarity=Neg	1	conj	_	_
+4	non	non	ADV	_	Polarity=Neg	3	advmod	_	_
+5	non	non	ADV	_	Polarity=Neg	1	conj	_	_
+6	non	non	ADV	_	Polarity=Neg	3	advmod	_	_
+7	non	non	ADV	_	Polarity=Neg	1	conj	_	_
+8	,	,	PUNCT	_	_	1	punct	_	_
+9	une	un	DET	_	Definite=Ind|Gender=Fem|Number=Sing|PronType=Art	10	det	_	_
+10	photo	photo	NOUN	_	Number=Sing	0	root	_	_
+11	c'	ce	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	10	nsubj	_	SpaceAfter=No
+12	est	être	AUX	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	10	cop	_	_
+13	pas	pas	ADV	_	Polarity=Neg	10	advmod	_	_
+14	.	.	PUNCT	_	_	10	punct	_	_
+
+# sent_id = fires_subject_right_dislocation_with_comma
+# expect_fix = subject_right_dislocation_with_comma
+# note = hand-made from the rule's own comment (the rule does not fire in Paris, the one corpus not yet rewritten)
+# text = il parle , ton bébé .
+1	il	lui	PRON	_	Case=Nom|Person=3|PronType=Prs	2	nsubj	_	_
+2	parle	parler	VERB	_	Mood=Ind|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	,	,	PUNCT	_	_	2	punct	_	_
+4	ton	son	DET	_	Poss=Yes	5	det	_	_
+5	bébé	bébé	NOUN	_	Number=Sing	2	obj	_	_
+6	.	.	PUNCT	_	_	2	punct	_	_
+
+# sent_id = fires_double_subject_post_vocative
+# expect_fix = double_subject_post_vocative
+# note = hand-made (see above)
+# text = tu viens , Marie ?
+1	tu	toi	PRON	_	Case=Nom|Person=2|PronType=Prs	2	nsubj	_	_
+2	viens	venir	VERB	_	Mood=Ind|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	,	,	PUNCT	_	_	2	punct	_	_
+4	Marie	Marie	PROPN	_	_	2	nsubj	_	_
+5	?	?	PUNCT	_	_	2	punct	_	_
+
+# sent_id = fires_disloc_dative_comma
+# expect_fix = disloc_dative_comma
+# note = hand-made from the rule's own comment (see above)
+# text = montre lui , à Marie , le livre !
+1	montre	montrer	VERB	_	Mood=Imp|Person=2|VerbForm=Fin	0	root	_	_
+2	lui	lui	PRON	_	Person=3|PronType=Prs	1	iobj	_	_
+3	,	,	PUNCT	_	_	5	punct	_	_
+4	à	à	ADP	_	_	5	case	_	_
+5	Marie	Marie	PROPN	_	_	1	obl:arg	_	_
+6	,	,	PUNCT	_	_	8	punct	_	_
+7	le	le	DET	_	Definite=Def	8	det	_	_
+8	livre	livre	NOUN	_	Number=Sing	1	obj	_	_
+9	!	!	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_adv-intj
+# expect_fix = adv-intj
+# note = Champaud 28125_u780
+# text = oh là là .
+1	oh	oh	INTJ	_	_	0	root	_	_
+2	là	là	ADV	_	_	1	advmod	_	_
+3	là	là	ADV	_	_	1	advmod	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_aller_a
+# expect_fix = aller_a
+# note = Paris 39178_u676
+# text = va à salon .
+1	va	aller	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+2	à	à	ADP	_	_	3	case	_	_
+3	salon	salon	NOUN	_	Number=Sing	1	obl:arg	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_basic-conj
+# expect_fix = basic-conj
+# note = Leveille 28924_u933
+# text = oh là là là là .
+1	oh	oh	INTJ	_	_	0	root	_	_
+2	là	là	ADV	_	_	1	fixed	_	_
+3	là	là	ADV	_	_	1	advmod	_	_
+4	là	là	ADV	_	_	1	advmod	_	_
+5	là	là	ADV	_	_	1	advmod	_	_
+6	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_basic-conj-bis
+# expect_fix = basic-conj-bis
+# note = Lyon 36972_u304
+# text = la la la la .
+1	la	le	ADV	_	_	0	root	_	_
+2	la	la	INTJ	_	_	1	fixed	_	_
+3	la	la	INTJ	_	_	1	fixed	_	_
+4	la	la	INTJ	_	_	1	fixed	_	_
+5	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_basic-conj-follow
+# expect_fix = basic-conj-follow
+# note = Lyon 37087_u229
+# text = hop couic couic couic couic couic .
+1	hop	hop	X	_	Foreign=Yes	0	root	_	_
+2	couic	couic	X	_	Foreign=Yes	1	flat:foreign	_	_
+3	couic	couic	X	_	Foreign=Yes	1	flat:foreign	_	_
+4	couic	couic	X	_	Foreign=Yes	1	flat:foreign	_	_
+5	couic	couic	X	_	Foreign=Yes	1	flat:foreign	_	_
+6	couic	couic	X	_	Foreign=Yes	1	flat:foreign	_	_
+7	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_basic-onomatopea
+# expect_fix = basic-onomatopea
+# note = Lyon 37157_u858
+# text = broum broum .
+1	broum	broum	NOUN	_	Number=Sing	0	root	_	_
+2	broum	broum	X	_	_	1	nmod	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_cela-dislocated-suj
+# expect_fix = cela-dislocated-suj
+# note = Lyon 37191_u605
+# text = ça ça ça saute .
+1	ça	ça	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	4	nsubj	_	_
+2	ça	ça	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	4	dislocated	_	_
+3	ça	ça	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	4	nsubj	_	_
+4	saute	sauter	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+5	.	.	PUNCT	_	_	4	punct	_	_
+
+# sent_id = fires_conj-discourse
+# expect_fix = conj-discourse
+# note = Champaud 28124_u423
+# text = eh eh eh .
+1	eh	eh	INTJ	_	_	0	root	_	_
+2	eh	eh	INTJ	_	_	1	discourse	_	_
+3	eh	eh	INTJ	_	_	1	discourse	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_de_verb_complement
+# expect_fix = de_verb_complement
+# expect_words = quand on parle de le loup !
+# expect_mwt = 4-5 du
+# note = Paris 42932_u1357
+# text = quand on parle du loup !
+1	quand	quand	SCONJ	_	_	3	mark	_	_
+2	on	on	PRON	_	Case=Nom|Emph=No|Gender=Masc|Number=Sing|Person=3|PronType=Ind	3	nsubj	_	_
+3	parle	parler	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+4	du	du	DET	_	Definite=Ind|Gender=Masc|Number=Sing|PronType=Art	5	det	_	_
+5	loup	loup	NOUN	_	Number=Sing	3	obj	_	_
+6	!	!	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_disloc_dative_post
+# expect_fix = disloc_dative_post
+# note = Paris 42904_u787
+# text = tu en proposes à Yona ?
+1	tu	toi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=2|PronType=Prs	3	nsubj	_	_
+2	en	en	PRON	_	Emph=No|Person=3|PronType=Prs	3	iobj	_	_
+3	proposes	proposer	VERB	_	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	_
+4	à	à	ADP	_	_	5	case	_	_
+5	Yona	Yona	PROPN	_	_	3	obl:arg	_	_
+6	?	?	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_disloc_dative_pre
+# expect_fix = disloc_dative_pre
+# note = Paris 42937_u1122
+# text = mais le train lui il tourne .
+1	mais	mais	CCONJ	_	_	6	cc	_	_
+2	le	le	DET	_	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	3	det	_	_
+3	train	train	NOUN	_	Number=Sing	6	nsubj	_	_
+4	lui	lui	PRON	_	Emph=Yes|Gender=Masc|Number=Sing|Person=3|PronType=Prs	6	iobj	_	_
+5	il	lui	PRON	_	Case=Nom|Emph=No|Gender=Masc|Number=Sing|Person=3|PronType=Prs	6	nsubj	_	_
+6	tourne	tourner	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+7	.	.	PUNCT	_	_	6	punct	_	_
+
+# sent_id = fires_dislocated-vocative
+# expect_fix = dislocated-vocative
+# note = Lyon 37198_u157
+# text = Tim tu viens .
+1	Tim	Tim	PROPN	_	_	3	dislocated:todo	_	_
+2	tu	toi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=2|PronType=Prs	3	nsubj	_	_
+3	viens	venir	VERB	_	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	todo=attach
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_double-adv-adj
+# expect_fix = double-adv-adj
+# note = Champaud 28131_u172
+# text = parfait parfait .
+1	parfait	parfait	ADJ	_	Gender=Masc|Number=Sing	0	root	_	_
+2	parfait	parfait	ADJ	_	Gender=Masc|Number=Sing	1	amod	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_double-aux
+# expect_fix = double-aux
+# note = Pauline 29904_u227
+# text = ont ont renversé .
+1	ont	avoir	AUX	_	Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin	3	aux:tense	_	_
+2	ont	avoir	AUX	_	Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin	3	aux:tense	_	_
+3	renversé	renverser	VERB	_	Gender=Masc|Number=Sing|VerbForm=Part|Voice=Act	0	root	_	_
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_double-cop
+# expect_fix = double-cop
+# note = Paris 39186_u622
+# text = soyez soyez gentilles !
+1	soyez	être	AUX	_	Mood=Ind|Number=Plur|Person=2|Tense=Pres|VerbForm=Fin	3	cop	_	_
+2	soyez	être	AUX	_	Mood=Ind|Number=Plur|Person=2|Tense=Pres|VerbForm=Fin	3	cop	_	_
+3	gentilles	gentille	ADJ	_	Gender=Fem|Number=Plur	0	root	_	_
+4	!	!	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_double-discourse
+# expect_fix = double-discourse
+# note = Champaud 28125_u456
+# text = eh euh euh .
+1	eh	eh	INTJ	_	_	0	root	_	_
+2	euh	euh	INTJ	_	_	1	discourse	_	_
+3	euh	euh	INTJ	_	_	1	discourse	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_double-prep-0
+# expect_fix = double-prep-0
+# note = Yamaguchi 43021_u59
+# text = pour pour !
+1	pour	pour	ADP	_	_	2	case	_	_
+2	pour	pour	ADP	_	_	0	root	_	_
+3	!	!	PUNCT	_	_	2	punct	_	_
+
+# sent_id = fires_double-prep-1
+# expect_fix = double-prep-1
+# note = Lyon 37096_u5
+# text = de de de crocodiles ?
+1	de	de	ADP	_	_	0	root	_	_
+2	de	de	ADP	_	_	1	fixed	_	_
+3	de	de	ADP	_	_	4	case	_	_
+4	crocodiles	crocodile	NOUN	_	Number=Plur	1	obl:arg	_	_
+5	?	?	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_double-prep-2
+# expect_fix = double-prep-2
+# note = Lyon 37028_u63
+# text = à à Ger .
+1	à	à	ADP	_	_	3	case	_	_
+2	à	à	ADP	_	_	3	case	_	_
+3	Ger	Ger	PROPN	_	_	0	root	_	_
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_double-sconj
+# expect_fix = double-sconj
+# note = Lyon 37210_u129
+# text = si si ça va .
+1	si	si	ADV	_	ExtPos=SCONJ	4	mark	_	_
+2	si	si	SCONJ	_	_	1	fixed	_	_
+3	ça	ça	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	4	nsubj	_	_
+4	va	aller	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+5	.	.	PUNCT	_	_	4	punct	_	_
+
+# sent_id = fires_double-subj
+# expect_fix = double-subj
+# note = Leveille 28929_u580
+# text = Janou tu es cruelle !
+1	Janou	Janou	PROPN	_	_	4	nsubj	_	_
+2	tu	toi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=2|PronType=Prs	4	nsubj	_	_
+3	es	être	AUX	_	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	4	cop	_	_
+4	cruelle	cruel	ADJ	_	Gender=Fem|Number=Sing	0	root	_	_
+5	!	!	PUNCT	_	_	4	punct	_	_
+
+# sent_id = fires_double-verb
+# expect_fix = double-verb
+# note = Champaud 28126_u796
+# text = regarde regarde .
+1	regarde	regarder	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+2	regarde	regarder	VERB	_	Number=Sing	1	xcomp	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_double-verb-1
+# expect_fix = double-verb-1
+# note = Champaud 28125_u342
+# text = télé télé .
+1	télé	téler	VERB	_	Gender=Masc|Number=Sing|VerbForm=Part|Voice=Pass	0	root	_	_
+2	télé	téler	VERB	_	Gender=Masc|Number=Sing|VerbForm=Part|Voice=Pass	1	xcomp	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_double-verb-2
+# expect_fix = double-verb-2
+# note = Lyon 36883_u279
+# text = attends attends .
+1	attends	attend	NOUN	_	Number=Plur	2	nsubj	_	_
+2	attends	attendre	VERB	_	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	.	.	PUNCT	_	_	2	punct	_	_
+
+# sent_id = fires_double_subject_post
+# expect_fix = double_subject_post
+# note = Paris 42911_u1163
+# text = qqq veux ça .
+1	qqq	qqq	PRON	_	PronType=Int	2	nsubj	_	_
+2	veux	vouloir	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	ça	ça	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	2	nsubj	_	_
+4	.	.	PUNCT	_	_	2	punct	_	_
+
+# sent_id = fires_double_subject_pre
+# expect_fix = double_subject_pre
+# note = Paris 42889_u1067
+# text = Ael ça suffit .
+1	Ael	Ael	PROPN	_	_	3	nsubj	_	_
+2	ça	ça	PRON	_	Gender=Masc|Number=Sing|Person=3|PronType=Dem	3	nsubj	_	_
+3	suffit	suffire	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_en-plus
+# expect_fix = en-plus
+# note = Champaud 28133_u588
+# text = si si en plus il a raison regarde regarde .
+1	si	si	SCONJ	_	_	6	mark	_	_
+2	si	si	SCONJ	_	_	6	mark	_	_
+3	en	en	ADP	_	ExtPos=ADV	6	advmod	_	_
+4	plus	plus	ADV	_	_	6	advmod	_	_
+5	il	lui	PRON	_	Case=Nom|Emph=No|Gender=Masc|Number=Sing|Person=3|PronType=Prs	6	nsubj	_	_
+6	a	avoir	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	9	advcl	_	_
+7	raison	raison	NOUN	_	Number=Sing	6	obj:lvc	_	_
+8	regarde	regarde	NOUN	_	Number=Sing	9	obj	_	_
+9	regarde	regarder	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+10	.	.	PUNCT	_	_	9	punct	_	_
+
+# sent_id = fires_fake-discourse
+# expect_fix = fake-discourse
+# note = Champaud 28125_u134
+# text = oui oui .
+1	oui	oui	INTJ	_	_	0	root	_	_
+2	oui	oui	INTJ	_	_	1	discourse	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_fake-flatname-0
+# expect_fix = fake-flatname-0
+# note = Champaud 28124_u193
+# text = Pinpin Pinpin .
+1	Pinpin	Pinpin	PROPN	_	_	0	root	_	_
+2	Pinpin	Pinpin	PROPN	_	_	1	flat:name	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_fake-flatname-1
+# expect_fix = fake-flatname-1
+# note = Paris 42916_u1798
+# text = club Internet oui .
+1	club	club	NOUN	_	Number=Sing	0	root	_	_
+2	Internet	Internet	PROPN	_	_	1	appos	_	_
+3	oui	oui	INTJ	_	_	2	flat:name	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_fake-flatname-2
+# expect_fix = fake-flatname-2
+# note = Champaud 28135_u1
+# text = Pinpin lapin !
+1	Pinpin	Pinpin	PROPN	_	Number=Sing	0	root	_	_
+2	lapin	lapin	X	_	Foreign=Yes	1	flat:name	_	_
+3	!	!	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_fake-nmod
+# expect_fix = fake-nmod
+# note = Lyon 36883_u47
+# text = attention attention attention .
+1	attention	attention	NOUN	_	Number=Sing	0	root	_	_
+2	attention	attention	NOUN	_	Number=Sing	1	nmod	_	_
+3	attention	attention	NOUN	_	Number=Sing	2	nmod	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_fuse_au
+# expect_fix = fuse_au
+# expect_words = à le citron ?
+# expect_mwt = 1-2 au
+# note = Paris 42883_u145
+# text = au citron ?
+1	à	à	ADP	_	_	3	case	_	_
+2	le	le	DET	_	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	3	det	_	_
+3	citron	citron	NOUN	_	Number=Sing	0	root	_	_
+4	?	?	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_fuse_aux
+# expect_fix = fuse_aux
+# expect_words = à les fleurs !
+# expect_mwt = 1-2 aux
+# note = Paris 42882_u934
+# text = aux fleurs !
+1	à	à	ADP	_	_	3	case	_	_
+2	les	le	DET	_	Definite=Def|Number=Plur|PronType=Art	3	det	_	_
+3	fleurs	fleur	NOUN	_	Number=Plur	0	root	_	_
+4	!	!	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_generic-double-det
+# expect_fix = generic-double-det
+# note = Leveille 28933_u1153
+# text = mon le mien .
+1	mon	son	DET	_	Gender=Masc|Number=Sing|Number[psor]=Sing|Person[psor]=1|Poss=Yes|PronType=Prs	3	det	_	_
+2	le	le	DET	_	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	3	det	_	_
+3	mien	mien	PRON	_	Number=Sing	0	root	_	_
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_insistance
+# expect_fix = insistance
+# note = Lyon 36908_u540
+# text = oh là là là !
+1	oh	oh	INTJ	_	_	0	root	_	_
+2	là	là	ADV	_	_	1	fixed	_	_
+3	là	là	ADV	_	_	1	advmod	_	_
+4	là	là	ADV	_	_	1	advmod	_	_
+5	!	!	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_lost-prep
+# expect_fix = lost-prep
+# note = Leveille 28934_u224
+# text = morceau de .
+1	morceau	morceau	NOUN	_	Number=Sing	0	root	_	_
+2	de	de	ADP	_	_	1	nmod	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_mix-fixed-conj
+# expect_fix = mix-fixed-conj
+# note = Lyon 37135_u428
+# text = plouf plouf plouf .
+1	plouf	plouf	NOUN	_	Number=Sing	0	root	_	_
+2	plouf	plouf	ADV	_	_	1	fixed	_	_
+3	plouf	plouf	ADV	_	_	1	advmod	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_moi-je
+# expect_fix = moi-je
+# note = Palasis 29643_u111
+# text = moi moi j'ai .
+1	moi	moi	PRON	_	Emph=Yes|Number=Sing|Person=1|PronType=Prs	4	dislocated	_	_
+2	moi	moi	PRON	_	Emph=Yes|Number=Sing|Person=1|PronType=Prs	4	dislocated	_	_
+3	j'	moi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=1|PronType=Prs	4	nsubj	_	SpaceAfter=No
+4	ai	avoir	VERB	_	Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin	0	root	_	_
+5	.	.	PUNCT	_	_	4	punct	_	_
+
+# sent_id = fires_non-3
+# expect_fix = non-3
+# note = Lyon 36897_u120
+# text = non non non .
+1	non	non	ADV	_	Polarity=Neg	3	advmod	_	_
+2	non	non	ADV	_	Polarity=Neg	1	advmod	_	_
+3	non	non	ADV	_	Polarity=Neg	0	root	_	_
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_ohla
+# expect_fix = ohla
+# note = Leveille 28924_u975
+# text = oh là .
+1	oh	oh	INTJ	_	_	0	root	_	_
+2	là	là	ADV	_	_	1	advmod	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_ohlala
+# expect_fix = ohlala
+# note = Champaud 28125_u780
+# text = oh là là .
+1	oh	oh	INTJ	_	_	0	root	_	_
+2	là	là	ADV	_	_	1	advmod	_	_
+3	là	là	ADV	_	_	1	advmod	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_oui-mix
+# expect_fix = oui-mix
+# note = Champaud 28132_u1126
+# text = oui oui oui oui .
+1	oui	oui	INTJ	_	_	0	root	_	_
+2	oui	oui	INTJ	_	_	1	discourse	_	_
+3	oui	oui	INTJ	_	_	1	discourse	_	_
+4	oui	oui	INTJ	_	_	1	discourse	_	_
+5	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_pos-regarde
+# expect_fix = pos-regarde
+# note = Champaud 28133_u186
+# text = tiens regarde .
+1	tiens	tenir	VERB	_	Mood=Imp|Number=Plur|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	_
+2	regarde	regarde	NOUN	_	Number=Sing	1	obj	_	_
+3	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_repeated-noun
+# expect_fix = repeated-noun
+# note = Champaud 28127_u726
+# text = attention attention !
+1	attention	attention	NOUN	_	Number=Sing	0	root	_	_
+2	attention	attention	NOUN	_	Number=Sing	1	nmod	_	_
+3	!	!	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_repeated-root
+# expect_fix = repeated-root
+# note = Champaud 28127_u368
+# text = hi hi .
+1	hi	hi	ADV	_	_	2	discourse	_	_
+2	hi	hi	INTJ	_	_	0	root	_	_
+3	.	.	PUNCT	_	_	2	punct	_	_
+
+# sent_id = fires_repetition-nominative
+# expect_fix = repetition-nominative
+# note = Lyon 36884_u207
+# text = toi tu mets ?
+1	toi	toi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=2|PronType=Prs	3	dislocated:todo	_	_
+2	tu	toi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=2|PronType=Prs	3	nsubj	_	_
+3	mets	mettre	VERB	_	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	todo=attach
+4	?	?	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_reroot-conj
+# expect_fix = reroot-conj
+# note = Lyon 36903_u329
+# text = là là là .
+1	là	là	ADV	_	_	0	root	_	_
+2	là	là	ADV	_	_	1	advmod	_	_
+3	là	là	ADV	_	_	1	advmod	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_reroot-discourse
+# expect_fix = reroot-discourse
+# note = Champaud 28131_u30
+# text = ah dis moi .
+1	ah	ah	INTJ	_	_	3	discourse	_	_
+2	dis	dis	VERB	_	_	0	root	_	_
+3	moi	moi	PRON	_	Emph=Yes|Number=Sing|Person=1|PronType=Prs	2	obj	_	_
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_split_des
+# expect_fix = split_des
+# expect_words = berk de les poils .
+# expect_mwt = 2-3 des
+# note = Paris 42891_u736
+# text = berk des poils .
+1	berk	berk	NOUN	_	Number=Sing	0	root	_	_
+2	des	un	DET	_	Definite=Ind|Number=Plur|PronType=Art	3	det	_	_
+3	poils	poils	NOUN	_	_	1	nmod	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_split_du
+# expect_fix = split_du
+# expect_words = fruits de le verger .
+# expect_mwt = 2-3 du
+# note = Paris 42910_u1591
+# text = fruits du verger .
+1	fruits	fruit	NOUN	_	Number=Plur	0	root	_	_
+2	du	du	DET	_	Definite=Ind|Gender=Masc|Number=Sing|PronType=Art	3	det	_	_
+3	verger	verger	NOUN	_	Number=Sing	1	nmod	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_subject_right_dislocation_intransitive
+# expect_fix = subject_right_dislocation_intransitive
+# note = Paris 42897_u1894
+# text = je te parle !
+1	je	moi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=1|PronType=Prs	3	nsubj	_	_
+2	te	toi	PRON	_	Case=Acc|Emph=No|Number=Sing|Person=2|PronType=Prs	3	obj	_	_
+3	parle	parler	VERB	_	Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin	0	root	_	_
+4	!	!	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_substantive-onomatopea-1
+# expect_fix = substantive-onomatopea-1
+# note = Lyon 36956_u347
+# text = une maison maison .
+1	une	un	DET	_	Definite=Ind|Gender=Fem|Number=Sing|PronType=Art	2	det	_	_
+2	maison	maison	NOUN	_	Number=Sing	0	root	_	_
+3	maison	maison	NOUN	_	Number=Sing	2	nmod	_	_
+4	.	.	PUNCT	_	_	2	punct	_	_
+
+# sent_id = fires_substantive-onomatopea-2
+# expect_fix = substantive-onomatopea-2
+# note = Lyon 37043_u27036
+# text = regarde le bobo bobo.
+1	regarde	regarder	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+2	le	le	DET	_	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	3	det	_	_
+3	bobo	bobo	NOUN	_	Number=Sing	1	obj	_	_
+4	bobo	bobo	X	_	_	3	flat:name	_	SpaceAfter=No
+5	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_toi-tu-obj
+# expect_fix = toi-tu-obj
+# note = Lyon 37039_u72
+# text = toi tu as .
+1	toi	toi	PRON	_	Emph=Yes|Number=Sing|Person=1|PronType=Prs	3	dislocated:todo	_	_
+2	tu	toi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=2|PronType=Prs	3	nsubj	_	_
+3	as	avoir	VERB	_	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	todo=attach
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_toi-tu-suj
+# expect_fix = toi-tu-suj
+# note = Leveille 28932_u266
+# text = toi j'espère .
+1	toi	toi	PRON	_	Emph=Yes|Number=Sing|Person=1|PronType=Prs	3	dislocated:todo	_	_
+2	j'	moi	PRON	_	Case=Nom|Emph=No|Number=Sing|Person=1|PronType=Prs	3	nsubj	_	SpaceAfter=No
+3	espère	espérer	VERB	_	Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin	0	root	_	todo=attach
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_tonic_subject_pronoun
+# expect_fix = tonic_subject_pronoun
+# note = Paris 42893_u215
+# text = et lui regarde .
+1	et	et	CCONJ	_	_	3	cc	_	_
+2	lui	lui	PRON	_	Case=Dat|Emph=No|Number=Sing|Person=3|PronType=Prs	3	iobj	_	_
+3	regarde	regarder	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+4	.	.	PUNCT	_	_	3	punct	_	_
+
+# sent_id = fires_two_object_pronouns
+# expect_fix = two_object_pronouns
+# note = Paris 42996_u1243
+# text = essuie toi les .
+1	essuie	essuyer	VERB	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+2	toi	toi	PRON	_	Emph=Yes|Number=Sing|Person=1|PronType=Prs	1	obj	_	_
+3	les	eux	PRON	_	Case=Acc|Emph=No|Number=Plur|Person=3|PronType=Prs	1	obj	_	_
+4	.	.	PUNCT	_	_	1	punct	_	_
+
+# sent_id = fires_voila
+# expect_fix = voila
+# note = Lyon 36939_u365
+# text = voilà voilà est où main ?
+1	voilà	voilà	VERB	_	_	0	root	_	_
+2	voilà	voilà	VERB	_	_	1	ccomp	_	_
+3	est	être	AUX	_	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	2	cop	_	_
+4	où	où	PRON	_	PronType=Int	5	nmod	_	_
+5	main	main	NOUN	_	Number=Sing	2	nsubj	_	_
+6	?	?	PUNCT	_	_	1	punct	_	_
+

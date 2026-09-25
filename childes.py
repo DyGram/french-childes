@@ -1544,22 +1544,65 @@ class ChatProcessor:
             corpus_corrected = grs.run(corpus)
             
             # Write the corrected data back to the CoNLL-U file
+            n_several = 0
+            not_a_tree = []
             with open(conllu_file, 'w', encoding='utf8') as f:
                 for sent_id in corpus_corrected:
                     # Get the list of transformed graphs
                     graphs = corpus_corrected[sent_id]
-                    
+
                     # Take the first solution (assuming deterministic rules)
                     if len(graphs) > 0:
-                        f.write(graphs[0].to_conll() + "\n")
+                        n_several += len(graphs) > 1
+                        rewritten = graphs[0].to_conll()
+                        # rules that re-attach repeated words can close a cycle or
+                        # delete the root when the parser hung an earlier copy off a
+                        # later one; keep the parse rather than write an invalid tree
+                        if not self._is_tree(rewritten) and self._is_tree(corpus[sent_id].to_conll()):
+                            not_a_tree.append(sent_id)
+                            rewritten = corpus[sent_id].to_conll()
+                        f.write(rewritten + "\n")
                     else:
-                        sys.stderr.write(f"    Warning: No rewrite result for {sent_id}\n")
-            
+                        # keep the sentence as parsed rather than dropping it
+                        sys.stderr.write(f"    Warning: No rewrite result for {sent_id}, kept unrewritten\n")
+                        f.write(corpus[sent_id].to_conll() + "\n")
+            if n_several:
+                sys.stderr.write(f"    Warning: {n_several} sentence(s) had more than one rewrite result; the first was kept\n")
+            if not_a_tree:
+                sys.stderr.write(f"    Warning: the rules left {len(not_a_tree)} sentence(s) without a valid tree; "
+                                 f"kept unrewritten: {', '.join(not_a_tree[:10])}{' ...' if len(not_a_tree) > 10 else ''}\n")
+
             sys.stderr.write(f"- Rewrite complete. Updated {conllu_file}\n")
 
         except Exception as e:
+            # Grew fails the whole corpus for a single sentence (a rule looping past
+            # 10,000 steps, a rule appending to a feature the node does not have).
+            # Carrying on would write the file with NO corrections and report
+            # success, which is how Paris went uncorrected until Sept 2026.
             sys.stderr.write(f"  Error during Grew rewrite: {e}\n")
-            # sys.exit(1)
+            sys.stderr.write(f"  {conllu_file} has NOT been corrected. Stopping.\n")
+            sys.exit(1)
+
+    @staticmethod
+    def _is_tree(conll):
+        """True if the sentence has exactly one root and no cycle."""
+        head = {}
+        for line in conll.splitlines():
+            cols = line.split('\t')
+            if len(cols) >= 8 and cols[0].isdigit():   # skips 3-4 ranges and 3.1 empty nodes
+                if not cols[6].isdigit():
+                    return False
+                head[cols[0]] = cols[6]
+        if list(head.values()).count('0') != 1:
+            return False
+        for tok in head:
+            seen, node = set(), tok
+            while node != '0':
+                if node in seen or node not in head:
+                    return False
+                seen.add(node)
+                node = head[node]
+        return True
 
     def resolve_filter_pos(self, row):
         """
