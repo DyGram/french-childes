@@ -88,7 +88,8 @@ def cleanUtt(s):
     # rule of their own here for exactly that reason.
     s = re.sub(r'(^|\s)0(\S)', r'\1\2', s)
     s = re.sub(r'&=li ', ' ', s)                   # Remove non-canonical liaison markers (mostly in Lyon project)
-    s = re.sub(r'<[^>]+> \[//?\] ', '', s)        # Remove retracings <...> [//]
+    #s = re.sub(r'<[^>]+> \[//?\] ', '', s)        # Remove retracings <...> [//]
+    s = re.sub(r'<([^>]+)> \[//?\] ', r'\1 ', s)        # edit: Remove <, >, and [//]
     s = re.sub(r'\[\!\] ?', ' ', s)               # Remove stressing [!]
     # CHAT pauses, unfilled and timed: (.) (..) (...) (3.) (2.5) (5..) (1:20.).
     # This is standard CHAT markup, so it is removed for every language. Two
@@ -2138,6 +2139,31 @@ class ChatProcessor:
                     f.write(line)
                 f.write("\n")
 
+    def _post_udpipe(self, params, content, retries=5, backoff=10):
+        """
+        POSTs one chunk to the UDPipe API, retrying on transient failures:
+        dropped connections (SSLError, ConnectionError), timeouts, and the
+        statuses that signal overload (429, 5xx). The wait doubles each time
+        (10, 20, 40, 80 s). The last attempt's response is returned as is, so
+        the caller's own status handling still applies; if the last attempt
+        raises, the exception propagates.
+        """
+        API_URL = "https://lindat.mff.cuni.cz/services/udpipe/api/process"
+        for attempt in range(1, retries + 1):
+            try:
+                resp = requests.post(API_URL, data=params, files={'data': content},
+                                    timeout=(30, 600))   # connect, read
+                if resp.status_code in (429, 500, 502, 503, 504) and attempt < retries:
+                    raise requests.exceptions.HTTPError(f"status {resp.status_code}")
+                return resp
+            except requests.exceptions.RequestException as e:
+                if attempt == retries:
+                    raise
+                wait = backoff * 2 ** (attempt - 1)
+                sys.stderr.write(f"\n  [WARNING] UDPipe request failed ({type(e).__name__}); "
+                                f"retry {attempt}/{retries - 1} in {wait}s...\n")
+                time.sleep(wait)
+
     def run_udpipe_api(self, input_file, model, chunk_size, presegmented=False):
         """
         presegmented=True: input_file is plain text, one utterance per line (built by
@@ -2169,7 +2195,13 @@ class ChatProcessor:
                 params = {'model': model, 'tokenizer': 'presegmented', 'tagger': '', 'parser': ''}
             else:
                 params = {'model': model, 'input': 'conllu', 'tagger': '', 'parser': ''}
-            response = requests.post(API_URL, data=params, files={'data': chunk_content})
+            #response = requests.post(API_URL, data=params, files={'data': chunk_content}) # see _post_udpipe
+            try:
+                response = self._post_udpipe(params, chunk_content)
+            except requests.exceptions.RequestException as e:
+                sys.exit(f"\nFATAL: chunk {current_chunk_num}/{total_chunks} could not be sent "
+                         f"after several retries: {e}")
+            time.sleep(1)   # be gentle with a shared public service
             if response.status_code == 200:
                 result = response.json().get('result')
                 if result:
@@ -2210,7 +2242,8 @@ class ChatProcessor:
                     params = {'model': model, 'tokenizer': 'presegmented', 'tagger': '', 'parser': ''}
                 else:
                     params = {'model': model, 'input': 'conllu', 'tagger': '', 'parser': ''}
-                resp = requests.post(API_URL, data=params, files={'data': mini_content})
+                #resp = requests.post(API_URL, data=params, files={'data': mini_content})
+                resp = self._post_udpipe(params, mini_content)
             except Exception as e:
                 # Network/transport error: save and exit
                 with open(out_path, 'w', encoding='utf8') as ef:
