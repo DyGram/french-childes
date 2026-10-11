@@ -66,7 +66,7 @@ LIGHT_COLS='utt_id,utt_nr,w_nr,URLwww,speaker,child_project,language,child_other
 
 # Set to "--code_head" to attach coding attributes to the 'addlemma' row
 # instead of the 'node' row.
-CODE_HEAD_FLAG=""
+CODE_HEAD_FLAG="--code_head"
 
 # ===========================================================================
 # 2. LANGUAGE PROFILES  (the only genuinely language-specific settings)
