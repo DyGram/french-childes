@@ -72,6 +72,7 @@ def cleanUtt(s):
     # (<nose spray> as ‹nose spray›, 35945 in the North American English data).
     # Normalised first, so every <...> rule below applies to them too.
     s = s.replace('‹', '<').replace('›', '>')
+    s = re.sub(r'\s*\[[<>]\d*\]', ' ', s) # Remove [<] (Lyon and Paris)
     # CHAT's omission markers. In '0the' / '0il' / '0ne' the omitted word itself
     # is written out and the rule below restores it. '0w', '0x' and '0zero' are
     # placeholders for an omission whose form is NOT recoverable, so restoring
@@ -87,7 +88,8 @@ def cleanUtt(s):
     # rule of their own here for exactly that reason.
     s = re.sub(r'(^|\s)0(\S)', r'\1\2', s)
     s = re.sub(r'&=li ', ' ', s)                   # Remove non-canonical liaison markers (mostly in Lyon project)
-    s = re.sub(r'<[^>]+> \[//?\] ', '', s)        # Remove retracings <...> [//]
+    #s = re.sub(r'<[^>]+> \[//?\] ', '', s)        # Remove retracings <...> [//]
+    s = re.sub(r'<([^>]+)> \[//?\] ', r'\1 ', s)        # edit: Remove <, >, and [//]
     s = re.sub(r'\[\!\] ?', ' ', s)               # Remove stressing [!]
     # CHAT pauses, unfilled and timed: (.) (..) (...) (3.) (2.5) (5..) (1:20.).
     # This is standard CHAT markup, so it is removed for every language. Two
@@ -128,11 +130,15 @@ def cleanUtt(s):
     # Letters incl. accented, apostrophe and hyphen only; digits and dots stay
     # excluded so that a pause the rule above somehow missed is left visible as
     # '(5.)' rather than silently turned into the word '5.'.
-    s = re.sub(r"\(([A-Za-zÀ-ÿ'’\-]+)\)", r'\1', s)
+    s = re.sub(r"\(([A-Za-zéÀ-ÿ'’\-]+)\)", r'\1', s)
     s = re.sub(r' \+/+', ' ', s)                  # Remove +/
     # added v4.4
-    s = re.sub(r'@[a-z:0-9]+', '', s)             # Remove special CHAT suffixes like @c, @s:eng
+    s = re.sub(r':?@[a-z:0-9]+', '', s)             # Remove special CHAT suffixes like @c, @s:eng
+    s = re.sub('↑', '', s)                        # Remove specific suffixes like ↑
     s = re.sub(r'&[\S]+', '', s)                  # Remove phonological fragments like &mm, event codes like &=laugh
+    # added after v4.4
+    s = re.sub(r"(?<=[^\W\d_])\(([A-Za-zÀ-ÿ'’_ \-]+)\)", r'\1', s) # s(i il)
+    s = re.sub(r"([A-Z])_([A-Z])", r"\1\2", s)    # MSH
     # must run AFTER the &-removal above: &=word's '=' would otherwise be turned into a
     # space first, splitting it into a bare '&' plus a stray real-looking word ('& laugh')
     s = re.sub(r'[_=]', ' ', s)                   # Replace _ and = with space
@@ -927,6 +933,9 @@ class ChatProcessor:
             # language now; only the event codes are handled here.
             s = re.sub(r" ?&=\w+", r"", s)
             s = re.sub(r'\s+', ' ', s).strip()
+        elif hasattr(self, 'language') and re.search(r'fra|french', self.language):
+            s = re.sub(r'([^\W\d_]):+', r'\1', s)
+            s = re.sub(r'\s+', ' ', s).strip()           
         return s
 
     def split_german_contractions(self, s, mwt, misc):
@@ -1040,8 +1049,8 @@ class ChatProcessor:
                 s = re.sub(r'\baux\b', 'à les', s)
                 s = re.sub(r'\bAu\b', 'À le', s)
                 s = re.sub(r'\bau\b', 'à le', s)
-            reBeginChar = re.compile(r'([\|\{\(\/\´\`"»«°<])') 
-            reEndChar = re.compile(r'([\]\|\}\/\`\"\),\;\:\!\?\.\%»«>])(?=\s|$)')   # also if followed by end of line
+            reBeginChar = re.compile(r'([\|\{\(\/\´\`\"\“»«°<])') 
+            reEndChar = re.compile(r'([\]\|\}\/\`\"\”\“\),\;\:\!\?\.\%»«>])(?=\s|$)')   # also if followed by end of line
             reBeginString = re.compile(r'([dcjlmnstDCJLNMST]\'|[Qq]u\'|[Jj]usqu\'|[Ll]orsqu\')') 
             reEndString = re.compile(r'(-t-elles?|-t-ils?|-t-on|-ce|-elles?|-ils?|-je|-la|-les?|-leur|-lui|-mêmes?|-m\'|-moi|-nous|-on|-toi|-tu|-t\'|-vous|-en|-y|-ci|-là)') 
             s = re.sub(reBeginString, r'\1 ', s)
@@ -1052,8 +1061,8 @@ class ChatProcessor:
         # Add other languages here with 'elif self.args.language == "other_language":'
         elif hasattr(self, 'language') and re.search(r'ita|italian', self.language):
             # Punctuation and delimiters like French
-            s = re.sub(r'([\|\{\(\/\´\`"»«°<])', r'\1 ', s)
-            s = re.sub(r'([\]\|\}\/\`\"\),\;\:\!\?\.\%»«>])(?=\s|$)', r' \1', s)
+            s = re.sub(r'([\|\{\(\/\´\`\"\”\“»«°<])', r'\1 ', s)
+            s = re.sub(r'([\]\|\}\/\`\"\”\“\),\;\:\!\?\.\%»«>])(?=\s|$)', r' \1', s)
             # Split apostrophe preceding a letter: l', un', c', d', gl', dell', quest', etc.
             #   but NOT split apocope like "po' " (followed by space)
             s = re.sub(r"([a-zA-Z]+')(?=[a-zA-Zà-úÀ-Ú])", r"\1 ", s)
@@ -2173,6 +2182,31 @@ class ChatProcessor:
                     f.write(line)
                 f.write("\n")
 
+    def _post_udpipe(self, params, content, retries=5, backoff=10):
+        """
+        POSTs one chunk to the UDPipe API, retrying on transient failures:
+        dropped connections (SSLError, ConnectionError), timeouts, and the
+        statuses that signal overload (429, 5xx). The wait doubles each time
+        (10, 20, 40, 80 s). The last attempt's response is returned as is, so
+        the caller's own status handling still applies; if the last attempt
+        raises, the exception propagates.
+        """
+        API_URL = "https://lindat.mff.cuni.cz/services/udpipe/api/process"
+        for attempt in range(1, retries + 1):
+            try:
+                resp = requests.post(API_URL, data=params, files={'data': content},
+                                    timeout=(30, 600))   # connect, read
+                if resp.status_code in (429, 500, 502, 503, 504) and attempt < retries:
+                    raise requests.exceptions.HTTPError(f"status {resp.status_code}")
+                return resp
+            except requests.exceptions.RequestException as e:
+                if attempt == retries:
+                    raise
+                wait = backoff * 2 ** (attempt - 1)
+                sys.stderr.write(f"\n  [WARNING] UDPipe request failed ({type(e).__name__}); "
+                                f"retry {attempt}/{retries - 1} in {wait}s...\n")
+                time.sleep(wait)
+
     def run_udpipe_api(self, input_file, model, chunk_size, presegmented=False):
         """
         presegmented=True: input_file is plain text, one utterance per line (built by
@@ -2204,7 +2238,13 @@ class ChatProcessor:
                 params = {'model': model, 'tokenizer': 'presegmented', 'tagger': '', 'parser': ''}
             else:
                 params = {'model': model, 'input': 'conllu', 'tagger': '', 'parser': ''}
-            response = requests.post(API_URL, data=params, files={'data': chunk_content})
+            #response = requests.post(API_URL, data=params, files={'data': chunk_content}) # see _post_udpipe
+            try:
+                response = self._post_udpipe(params, chunk_content)
+            except requests.exceptions.RequestException as e:
+                sys.exit(f"\nFATAL: chunk {current_chunk_num}/{total_chunks} could not be sent "
+                         f"after several retries: {e}")
+            time.sleep(1)   # be gentle with a shared public service
             if response.status_code == 200:
                 result = response.json().get('result')
                 if result:
@@ -2245,7 +2285,8 @@ class ChatProcessor:
                     params = {'model': model, 'tokenizer': 'presegmented', 'tagger': '', 'parser': ''}
                 else:
                     params = {'model': model, 'input': 'conllu', 'tagger': '', 'parser': ''}
-                resp = requests.post(API_URL, data=params, files={'data': mini_content})
+                #resp = requests.post(API_URL, data=params, files={'data': mini_content})
+                resp = self._post_udpipe(params, mini_content)
             except Exception as e:
                 # Network/transport error: save and exit
                 with open(out_path, 'w', encoding='utf8') as ef:
