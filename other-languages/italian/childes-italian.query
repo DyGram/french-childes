@@ -1,104 +1,297 @@
 %--------------------------------------------------------
-% Rules for graphs created with UDPipe (Default Italian)
-% AS May 25
+% Rules for graphs created with UDPipe 
 %
-% --merge: Codings are added to the table in the row of 'node'
-% ==> run dql.py WITHOUT flag --code_head
-%         (--code_head would add attributes to the row of 'addlemma')
+% TODO these query are based on the french query file. Most rules need to be adapted to Italian.
+%
+% Rules are ranked by specificity
+% ==> run dql.py --first_rule
+% 
+% Rationale:
+% - attributes for functions: obj, iobj, oblique, modifier, refl
+% - for each function
+%   - rules specify positive values (e.g., clit3, nominal, etc.)
+%   - the last rule is a default rule with value "other"
+% - intransitive is inferred if no function is annotated for
+%   - there is no positive way to match intransitives
 %--------------------------------------------------------
 
+
 %--------------------------------------------------------
-% 1. OBJECT CLITICS
+% subj: SUBJECT
+%   1=nsubj (so that nsubj:pass is also matched)
+%--------------------------------------------------------
+
+% ======= impersonal subject 
+% coding attribute=subj value=clit_imp node=PRO addlemma=V
+pattern {
+    V -[nsubj|expl:subj]-> PRO;
+    V [upos=/AUX|VERB/];
+    PRO [form=/^0il/i];
+}
+
+% ======= subject clitic
+% coding attribute=subj value=clit node=PRO addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [];
+    V -[1=nsubj]-> PRO;
+}
+
+% ======= subject noun
+% coding attribute=subj value=noun_preverbal node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos=/NOUN|PROPN/];
+    V -[1=nsubj]-> N;
+    N << V;
+}
+
+% ======= subject noun
+% coding attribute=subj value=noun_postverbal node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos=/NOUN|PROPN/];
+    V -[1=nsubj]-> N;
+    V << N;
+}
+
+% ======= subject noun
+% coding attribute=subj value=noun node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos=/NOUN|PROPN/];
+    V -[1=nsubj]-> N;
+}
+
+% ======= subject pronoun (not clitic): relative, demonstrative (ce, on, etc.)
+% coding attribute=subj value=pro node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos="PRON"];
+    V -[1=nsubj]-> N;
+}
+
+%--------------------------------------------------------
+% subj: SUBJECT OF COPULA
+%   (UD: the predicate is root and verb depends via 'cop')
+%--------------------------------------------------------
+
+% ======= copula subject pronoun (c'est X qui...)
+% coding attribute=subj value=pron_cop node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos=/PRON/];
+    X -[cop]-> V;
+    X -[nsubj|expl:subj]-> N;
+}
+
+% ======= copula subject noun (Paul est ...)
+% coding attribute=subj value=noun_cop node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos=/NOUN|PROPN/];
+    X -[cop]-> V;
+    X -[nsubj]-> N;
+}
+
+% ======= copula predicate noun (c'est Paul)
+% coding attribute=obj value=noun_cop node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos=/NOUN|PROPN/];
+    N -[cop]-> V;
+}
+
+%--------------------------------------------------------
+% obj: DIRECT OBJECT (including predicate of copula)
 %--------------------------------------------------------
 
 % ======= direct object person 3
-% coding attribute=clitic_acc value=obj3 node=V addlemma=PRO
+% coding attribute=obj value=clit3 node=PRO addlemma=V
+pattern {
+    V -[obj]-> PRO;
+    V [upos=/AUX|VERB/];
+    PRO [form=/^l.*$/i, PronType="Prs"];
+}
+
+% ======= direct object person 1-2: me te nous vous
+% coding attribute=obj value=clit12 node=PRO addlemma=V
 pattern {
     V [upos=/AUX|VERB/];
-    PRO [form=/^[lL].*$/, PronType="Prs"];
+    PRO [form=/^[mtvn].*$/i, PronType="Prs"];
     V -[obj]-> PRO;
 }
 
-% ======= direct object person 1-2
-% coding attribute=clitic_acc value=obj12 node=V addlemma=PRO
+% ======= direct object noun
+% coding attribute=obj value=noun node=N addlemma=V
 pattern {
     V [upos=/AUX|VERB/];
-    PRO [form=/^[mtvnMTVN].*$/, PronType="Prs"];
-    V -[obj]-> PRO;
+    N [upos=/NOUN|PROPN/];
+    V -[obj]-> N;
 }
+
+% ======= direct object quantifier + noun (beaucoup de gens, plusieurs livres, etc.)
+% coding attribute=obj value=quant node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    Q [upos="ADV"];
+    N [upos=/NOUN|PRON/];
+    V -[obj]-> Q;
+    Q -> N;
+}
+
+% ======= direct object pronoun (not clitic): relative, demonstrative (cela, lui, etc.)
+% coding attribute=obj value=pro node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    N [upos="PRON"];
+    V -[obj]-> N;
+}
+
+%--------------------------------------------------------
+% iobj: Dative objects
+%--------------------------------------------------------
 
 % ======= indirect object person 3
-% coding attribute=clitic_dat value=iobj3 node=V addlemma=PRO
+% coding attribute=iobj value=clit3 node=PRO addlemma=V
 pattern {
     V [upos=/AUX|VERB/];
-    PRO [form=/^[lgLG].*$/, PronType="Prs"];
+    PRO [form=/^(le|gli|loro)$/i, PronType="Prs"];
     V -[iobj]-> PRO;
 }
 
 % ======= indirect object person 1-2
-% coding attribute=clitic_dat value=iobj12 node=V addlemma=PRO
+% coding attribute=iobj value=clit12 node=PRO addlemma=V
 pattern {
     V [upos=/AUX|VERB/];
-    PRO [form=/^[mtvcMTVC].*$/, PronType="Prs"];
+    PRO [form=/^[mtvn].*$/i, PronType="Prs"];
     V -[iobj]-> PRO;
 }
 
-% ======= ci
-% coding attribute=clitic_adv value=loc node=V addlemma=PRO
+%--------------------------------------------------------
+% refl: reflexive clitics and pronouns
+%--------------------------------------------------------
+
+% ======= reflexive
+% coding attribute=refl value=clit node=PRO addlemma=V
 pattern {
     V [upos=/AUX|VERB/];
-    PRO [form=re"^[cC][i']", PronType="Prs"];
-    V -[expl|expl:comp|obl:mod]-> PRO;
+    PRO [form = re"^[sS][e']$", PronType="Prs"];   % tricky: apostrophes don't work in /regex/
+    V -> PRO;    % or expl:pv ?
 }
 
 %--------------------------------------------------------
-% 2. REFLEXIVE CLITICS
-%    usually parses reflexives as  expl:pv  or  obj
+% oblique: Prepositional objects
 %--------------------------------------------------------
 
-% ======= reflexive person 3
-% coding attribute=refl value=3 node=V addlemma=PRO
+% ======= à-PP argument
+% coding attribute=oblique value=aPP node=N addlemma=V
 pattern {
     V [upos=/AUX|VERB/];
-    PRO [Clitic="Yes", Person="3", PronType="Prs"];
-    V -[re".*"]-> PRO;
-}
-
-% ======= reflexive person 1-2
-% coding attribute=refl value=12 node=V addlemma=PRO
-pattern {
-    V [upos=/AUX|VERB/];
-    PRO [Clitic="Yes", Person=/[12]/, PronType="Prs"];
-    V -[re".*"]-> PRO;
-}
-
-%--------------------------------------------------------
-% 3. POTENTIAL DATIVE ARGUMENTS (a-PPs)
-%    a-PPs are parsed as arguments (obl:arg) or modifiers (obl:mod)
-%--------------------------------------------------------
-
-% ======= a PP
-% coding attribute=a_pp value=mod node=V addlemma=P
-pattern {
-    V [upos=/AUX|VERB/];
-%    P [form=/^(a|alla|alle|agli|al|all')/];   % apostrophe casts error in slashed regex
-    P [form=re"^(a|alla|alle|agli|al|all')"];
-    N [upos=/NOUN|PROPN/];
-    V -[obl|obl:mod]-> N;
+    V -[obl:arg]-> N;  % target only first part of e.g. obl:arg
     N -[case]-> P;
+    P [form=/^à|au|aux/i];
 }
 
-%--------------------------------------------------------
-% 4. VERB PARTICLES
-%--------------------------------------------------------
-
-% ======= giù etc.
-% coding attribute=part value=adv node=V addlemma=P
+% ======= y
+% coding attribute=oblique value=y node=PRO addlemma=V
 pattern {
     V [upos=/AUX|VERB/];
-    P [ ];
-    V -[advmod]-> P;
-    V << P;
+    PRO [form="y"];
+    V -> PRO;
 }
 
-%
+% ======= en
+% coding attribute=oblique value=en node=PRO addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    PRO [form="en"];
+    V -> PRO;
+}
+
+
+%--------------------------------------------------------
+% modifier: Prepositional modifiers
+%--------------------------------------------------------
+
+% ======= other PP
+% coding attribute=modifier value=otherPP node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    V -> N;
+    N -[case]-> P;
+    P [form<>/^à|au|aux/i];
+}
+
+% ======= à-PP other
+% coding attribute=modifier value=aPP node=N addlemma=V
+pattern {
+    V [upos=/AUX|VERB/];
+    V -> N;
+    N -[case]-> P;
+    P [form=/^à|au|aux/i];
+}
+without {
+    V -[obl:arg]-> N;  % except oblique arguments coded above
+}
+
+%--------------------------------------------------------
+% cp: CLAUSAL/PHRASAL COMPLEMENTS
+%--------------------------------------------------------
+
+% ======= modal verbs: tu veux lui donner...
+% coding attribute=cp value=xcomp node=V addlemma=Vmain
+pattern {
+    Vmain [upos="VERB"];
+    V [upos=/AUX|VERB/, VerbForm=Inf];
+    Vmain -[xcomp]-> V;   
+}
+
+% ======= complement clause: il faut venir
+% coding attribute=cp value=ccomp node=V addlemma=Vmain
+pattern {
+    Vmain [upos="VERB"];
+    V [upos=/AUX|VERB/, VerbForm=Inf];
+    Vmain -[ccomp]-> V;   
+}
+
+% ======= other complements:
+% coding attribute=cp value=other node=V addlemma=Vmain
+pattern {
+    Vmain [upos="VERB"];
+    V [upos=/AUX|VERB/, VerbForm=Inf];
+    Vmain -> V;   
+}
+without {
+    Vmain -[aux:pass]-> V;
+}
+
+%--------------------------------------------------------
+% passive: 
+%--------------------------------------------------------
+
+% ======= other complements:
+% coding attribute=passive value=1 node=AUX addlemma=V
+pattern {
+    V [upos="VERB"];
+    AUX [upos="AUX"];
+    V -[aux:pass]-> AUX;
+}
+
+
+
+
+exit 
+
+%--------------------------------------------------------
+% INTRANSITIVE
+%--------------------------------------------------------
+
+% coding attribute=intr value=1 node=X addlemma=V
+pattern {
+    V -> X;
+}
+without {
+    V -[obj|iobj]-> X;
+}
+
