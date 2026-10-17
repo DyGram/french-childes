@@ -138,7 +138,7 @@ def cleanUtt(s):
     s = re.sub(r'&[\S]+', '', s)                  # Remove phonological fragments like &mm, event codes like &=laugh
     # added after v4.4
     s = re.sub(r"(?<=[^\W\d_])\(([A-Za-zÀ-ÿ'’_ \-]+)\)", r'\1', s) # s(i il)
-    s = re.sub(r"([A-Z])_([A-Z])", r"\1\2", s)    # MSH
+    s = re.sub(r"(?<=[A-Z])_(?=[A-Z])", "", s)    # M_S_H -> MSH (lookarounds, so every underscore goes)
     # must run AFTER the &-removal above: &=word's '=' would otherwise be turned into a
     # space first, splitting it into a bare '&' plus a stray real-looking word ('& laugh')
     s = re.sub(r'[_=]', ' ', s)                   # Replace _ and = with space
