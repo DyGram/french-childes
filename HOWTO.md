@@ -140,7 +140,10 @@ with `-l`, or inferred from the name of the current directory:
 
 Before the first run, adapt the configuration block at the top: `PYPATH` (this
 repository), `DATAPATH` (where the TreeTagger parameter files are), `SERVER_IP`
-(for the HTML links), and the per-language profiles below it.
+(for the HTML links), and the per-language profiles below it. Each profile also
+sets `POS_UTTERANCE`, the verb pattern for `--pos_utterance`/`--pos_output`: UPOS
+`AUX|VERB` plus the tagger's verb tags, since the pipeline matches both
+(`--filter_pos either`, section 5.3).
 
 ```sh
 ./childes-pipeline.sh -1 <file>    # only step 1, childes.py
@@ -208,10 +211,12 @@ On this snippet that is 94 rows in the full table and 24 in the light one -
 12 VERB, 5 ADJ, 4 AUX, 3 NOUN.
 
 `--pos_utterance` and `--pos_output` match the **parser's UPOS** (`VERB`, `AUX`,
-`NOUN`, ...) whenever `--api_model` is used. Pass `--use_tagger_pos` to match the
-tagger's own tags (`VER:pres`, `VVFIN`, `VBZ`) instead. This is a frequent source
-of silently empty light tables: a regex written for one tagset matches nothing in
-the other.
+`NOUN`, ...) whenever `--api_model` is used. Pass `--filter_pos tagger` to match the
+tagger's own tags (`VER:pres`, `VVFIN`, `VBZ`) instead, or `--filter_pos either` to
+accept a row when either of the two matches; `childes-pipeline.sh` uses `either`.
+A regex written for one tagset matches nothing in the other, which is a frequent
+source of silently empty light tables; with `either` the regex must cover both
+(`'^(AUX|VERB|VER)'`).
 
 The model name is passed to the API; see the
 [UDPipe model list](https://lindat.mff.cuni.cz/repository/items/41f05304-629f-4313-b9cf-9eeb0a2ca7c6).
@@ -225,8 +230,14 @@ python3 childes.py test-snippet.cha \
     --api_model french \
     -p perceo-spoken-french-utf.par --tag_ud_tokens \
     --write_conllu \
-    --pos_utterance '^(VERB|AUX)' --pos_output '^(VERB|AUX)'
+    --filter_pos either \
+    --pos_utterance '^(AUX|VERB|VER)' --pos_output '^(AUX|VERB|VER)'
 ```
+
+`--filter_pos either` keeps the utterance on a row when the parser's UPOS or the
+tagger's tag matches, so the pattern names both: `AUX|VERB` for the parser,
+`VER` for the tagger's `VER:pres`, `VER:infi` ... This is what
+`childes-pipeline.sh` does.
 
 With `--tag_ud_tokens` the tagger runs **after** the parse, over the final
 tokens, and fills the additional columns `tagger_pos` and `tagger_lemma`. `pos`
@@ -414,7 +425,7 @@ Worth checking on a new corpus:
 |---|---|
 | `Grew backend failed to initialize` | the Grew backend is not reachable; `childes.py` still converts and parses, but skips `--rewrite`, and `dql.py` will not start |
 | `ModuleNotFoundError: No module named 'grewpy'` | install `grewpy` **and** the Grew backend into the environment you run the scripts from |
-| the light table has only a header | `--pos_output` matches the wrong tagset - see `--use_tagger_pos` |
+| the light table has only a header | `--pos_output` matches the wrong tagset - see `--filter_pos` |
 | the API times out or returns an error | lower `--chunk_parse` |
 | `More than 10000 rewriting steps` | a Grew rule loops: its pattern does not test what its command changes |
 | tagger columns empty | `--tag_ud_tokens` needs **both** `-p` and `--api_model` |

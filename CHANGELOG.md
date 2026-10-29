@@ -5,6 +5,44 @@ summary per version; this file has the full reasoning, evidence, and examples
 behind each design decision, for anyone who needs to know *why* something works
 the way it does before changing it.
 
+## v6.1 - `--filter_pos`: the utterance on every row with verbal evidence
+
+`--pos_utterance` blanks `utterance`/`utt_clean`/`utt_tagged` on every row whose
+POS does not match it, and that POS was the parser's UPOS only (or, with
+`--use_tagger_pos`, the tagger's tag only). The R preprocessing, however, keeps
+a row in its verb table when the parser says VERB/AUX **or** the tagger's tag
+is verbal (`verb_evidence` = `parser`, `tagger`, `both`). Every
+`verb_evidence == "tagger"` row therefore had an empty utterance, and only
+those: 11,466 of 98,236 rows (11.7%) in the Italian verb table, 22,387 of
+720,281 (3.1%) in the French one. The share is higher in Italian because the
+`italian-isdt-ud-2.5` model often mistags verbs in child speech
+(*vieni* -> NOUN, lemma *vieno*; *scrivi* -> NOUN, lemma *scrivo*).
+
+`--filter_pos {parser,tagger,either}` replaces `--use_tagger_pos` (kept as an
+alias for `tagger`). With `either`, a row matches when any of its POS values
+does: `conll_4`, `tagger_pos` and `pos`. `pos` always holds one of the two: the
+tagger's tag in plain `--parameters` mode, the parser's UPOS otherwise. The
+default stays `parser`. A separate regex for the tagger tag was considered and
+rejected in favour of one mode switch, at the price that the regex must now
+cover both tagsets.
+
+`childes-pipeline.sh` passes `--filter_pos either`. `POS_UTTERANCE`/`POS_OUTPUT`
+moved from the shared configuration into the language profiles: UPOS
+`AUX|VERB` plus the tagger part of `verb_tag` in `childes-preprocessing.Rmd`
+(`VER` for French and Italian, `V` for German, `VV|VB|VH|VD|MD` and
+`VV|VB|VD|VH|VM` for the two English tagsets). On the existing all-tokens
+tables the new criterion selects exactly the rows the R criterion selects
+(Italian 98,236, French 750,913, no disagreement in either direction). The
+light table (`--pos_output`) now also contains the tagger-only rows. The light
+*coded* table of Step 2 is filtered separately, by `LIGHT_ROW_UPOS` on column
+`pos`, and remains parser-only.
+
+Verified after re-running both pipeline steps over all Italian files and the R
+preprocessing: of the 98,236 rows of the Italian verb table (76,346 `both`,
+10,424 `parser`, 11,466 `tagger`), none has an empty `utterance`. Note that a
+Step-2-only run (`-2`) does not apply the change: the utterance is blanked in
+Step 1, and Step 2 merges into the existing `*.parsed.csv`.
+
 ## Unreleased - Clitics of causative and perception constructions leave the dative cues
 
 The DATIVE CUES codings of `childes-french.query` (`cl_acc`, `cl_dat`,

@@ -51,10 +51,13 @@ SERVER_IP="julienas.philosophie.uni-stuttgart.de" # web server for the HTML expo
 CHUNK_PARSE=2000        # utterances per UDPipe API call
 
 # Which rows carry the full utterance text, and which rows the "light" table
-# keeps. These match the PARSER's universal POS (UPOS), not the tagger's tags -
-# see childes.py --use_tagger_pos. VERB and AUX are what the analyses need.
-POS_UTTERANCE='^(AUX|VERB)'
-POS_OUTPUT='^(AUX|VERB)'
+# keeps: a row qualifies when the parser's UPOS OR the tagger's tag marks it as
+# a verb (childes.py --filter_pos either) - the same criterion by which the R
+# preprocessing builds its verb table (verb_evidence). With 'parser', rows that
+# only the tagger takes for a verb (Italian 'vieni' parsed as NOUN) came out
+# with an empty utterance. The patterns POS_UTTERANCE/POS_OUTPUT must therefore
+# cover both tagsets and are set per language in apply_language_profile().
+FILTER_POS="either"
 
 # Step 2, "light coded" table: rows to keep, by parser UPOS.
 LIGHT_ROW_UPOS='^(VERB|AUX)$'
@@ -74,6 +77,10 @@ CODE_HEAD_FLAG="--code_head"
 # Model lists:
 #   UDPipe     https://lindat.mff.cuni.cz/repository/items/41f05304-629f-4313-b9cf-9eeb0a2ca7c6
 #   TreeTagger https://www.cis.uni-muenchen.de/~schmid/tools/TreeTagger/
+#
+# POS_UTTERANCE: UPOS AUX|VERB, plus the tagger's verb tags. The tagger part
+# must agree with 'verb_tag' in the language profiles of the R preprocessing
+# (childes-preprocessing.Rmd).
 
 apply_language_profile() {
     IT_DIR="${PYPATH}/other-languages/italian"
@@ -86,6 +93,7 @@ apply_language_profile() {
         HTML_DIR="ch_fr"
         DQL_REQUESTS="childes-french.query"
         EXTRA_FLAGS=""
+        POS_UTTERANCE='^(AUX|VERB|VER)'   # tagger: VER:pres ..., AUX:...
         ;;
       de)
         LANG_NAME="German"
@@ -95,6 +103,7 @@ apply_language_profile() {
         HTML_DIR="ch_de"
         DQL_REQUESTS="childes-german.query"
         EXTRA_FLAGS=""
+        POS_UTTERANCE='^(AUX|VERB|V)'     # tagger: STTS VVFIN VAFIN VMINF ...
         ;;
       it)
         LANG_NAME="Italian"
@@ -104,6 +113,7 @@ apply_language_profile() {
         HTML_DIR="ch_it"
         DQL_REQUESTS="childes-italian.query"
         EXTRA_FLAGS="--verb_lexicon ${IT_DIR}/italian-verbs.grewlex.tsv --enclitic_stoplist ${IT_DIR}/italian-noclitic.txt"
+        POS_UTTERANCE='^(AUX|VERB|VER)'   # tagger: VER:pres, VER:impe ...
         ;;
       en-na)
         LANG_NAME="English (North America)"
@@ -113,6 +123,7 @@ apply_language_profile() {
         HTML_DIR="ch_en"
         DQL_REQUESTS="childes-english.query"
         EXTRA_FLAGS=""
+        POS_UTTERANCE='^(AUX|VERB|VV|VB|VH|VD|MD)'   # tagger: Penn-style VVZ, VBD, MD ...
         ;;
       en-uk)
         LANG_NAME="English (UK)"
@@ -122,11 +133,13 @@ apply_language_profile() {
         HTML_DIR="ch_uk"
         DQL_REQUESTS="childes-english.query"
         EXTRA_FLAGS=""
+        POS_UTTERANCE='^(AUX|VERB|VV|VB|VD|VH|VM)'   # tagger: BNC C5 VVB, VBZ, VM0 ...
         ;;
       *)
         return 1
         ;;
     esac
+    POS_OUTPUT="$POS_UTTERANCE"
     SERVER_URL="https://${SERVER_IP}/${HTML_DIR}"
     return 0
 }
@@ -332,7 +345,7 @@ GIT_REV=$(cd "$PYPATH" && git rev-parse --short HEAD 2>/dev/null || echo "not-a-
 GIT_DIRTY=""
 (cd "$PYPATH" && git diff --quiet 2>/dev/null) || GIT_DIRTY=" (uncommitted changes)"
 info "childes.py $CHILDES_VERSION ($CHILDES_STATUS), repo $GIT_REV$GIT_DIRTY"
-info "model=$API_MODEL  tagger=$(basename "$TAGGER_PAR")  html=$HTML_DIR"
+info "model=$API_MODEL  tagger=$(basename "$TAGGER_PAR")  html=$HTML_DIR  pos=$FILTER_POS:$POS_UTTERANCE"
 
 TAGGER_FLAGS=""
 REWRITE_FLAG=""
@@ -370,7 +383,7 @@ if [ "$RUN_STEP_1" = true ]; then
 
     set -- "${PYPATH}/childes.py" "$INPUT_FILE" \
         --chunk_parse "$CHUNK_PARSE" \
-        --pos_utterance "$POS_UTTERANCE" --pos_output "$POS_OUTPUT" \
+        --pos_utterance "$POS_UTTERANCE" --pos_output "$POS_OUTPUT" --filter_pos "$FILTER_POS" \
         --write_conllu --html_dir "$HTML_DIR" --server_url "$SERVER_URL" \
         --api_model "$API_MODEL"
     [ -n "$REWRITE_FLAG" ] && set -- "$@" $REWRITE_FLAG

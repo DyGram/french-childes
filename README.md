@@ -17,7 +17,7 @@ will produce `test-snippet.parsed.coded.csv` (and other optional output files), 
 
 The scripts were developed for French input, but `childes.py` is sensitive to the language CODE in CHAT files. French, Italian, German and English CHILDES files were processed successfully. For other languges, please adapt:
 
-- `childes.py`: add tokenisation rules to the function `tokenise()`. The options `--pos_utterance` and `--pos_output` match the parser's UPOS (`VERB`, `AUX`, `NOUN`, ...), which is the same across languages; with `--use_tagger_pos` they match the tagger's own tags instead, and those are language- and model-specific.
+- `childes.py`: add tokenisation rules to the function `tokenise()`. The options `--pos_utterance` and `--pos_output` match the parser's UPOS (`VERB`, `AUX`, `NOUN`, ...), which is the same across languages; with `--filter_pos tagger` they match the tagger's own tags instead, and those are language- and model-specific. `childes-pipeline.sh` uses `--filter_pos either`, so a new language profile there needs a `POS_UTTERANCE` pattern that adds the tagger's verb tags to `AUX|VERB` (in agreement with `verb_tag` in the R preprocessing).
 - `dql.py`: adapt the Grew query (syntactic coding) to language-specific UD annotation
 
 For some languages, the folder _other-languages_  contains a usable wrapper script and coding query file.
@@ -61,7 +61,12 @@ This script converts CHILDES chat data to a one-word-per-line CSV format. It int
   - **Tagging:** Optionally uses TreeTagger for POS tagging before parsing. If TreeTagger is not used, tokenisation is normally left to UDPipe: cleaned but untokenised utterance text is sent, and UDPipe performs its own UD-compliant tokenisation (including multiword tokens, e.g. English `gonna` -> `gon`+`na`). The exception is French, where contractions must stay fused - see `--fuse_contractions`.
   - **Session-Aware Streaming:** Processes large files by handling them as a series of sessions (based on `@Begin` markers) and sending data to the parsing API in manageable chunks.
   - **Non-Destructive Conversion:** The original utterance from the CHAT file is preserved. Special markers (e.g., `[//]`, `(.)`, `xxx`) are retained in the raw utterance column, while a cleaned version is used for tagging and parsing.
-  - **POS-based filtering:** `--pos_output`/`--pos_utterance` match the parser's universal POS (UPOS) by default when `--api_model` is used, rather than the tagger's own language/model-specific tag - so the same regex (e.g. `VERB`) works across corpora and tagger models. Use `--use_tagger_pos` to restore matching against the tagger's tag. `--pos_utterance` defaults to `--pos_output`'s value when not given explicitly.
+  - **POS-based filtering:** `--pos_output` selects the rows of the light table, `--pos_utterance` the rows that carry the full utterance text; `--pos_utterance` defaults to `--pos_output`'s value when not given explicitly. `--filter_pos` sets which POS the two regexes are matched against:
+      - `parser` (default): the parser's universal POS (UPOS) when `--api_model` is used, so the same regex (e.g. `VERB`) works across corpora and tagger models;
+      - `tagger`: the tagger's own language/model-specific tag (`VER:pres`, `VVFIN`, `VBZ`); `--use_tagger_pos` is kept as an alias;
+      - `either`: a row matches when the parser's UPOS **or** the tagger's tag matches. The regex must then cover both tagsets, e.g. `'^(AUX|VERB|VER)'` for Italian.
+
+    `childes-pipeline.sh` uses `either`, with a per-language pattern in each language profile, so that the utterance is kept on every row the R preprocessing counts as a verb (parser VERB/AUX or a verbal tagger tag). With `parser`, a verb that only the tagger recognises - Italian _vieni_ parsed as NOUN - would get an empty `utterance` cell. `tagger` and `either` have no effect without `--parameters`.
   - **Outputs:**
       - A **full CSV** (`.parsed.csv`) containing all original columns plus the complete CoNLL-U annotation for each token.
       - A **light CSV** (`.light.csv`) containing a subset of columns, optionally filtered by the POS of the token (`--pos_output`).
@@ -75,6 +80,13 @@ This script converts CHILDES chat data to a one-word-per-line CSV format. It int
 Full rationale, evidence and examples for each item below are in
 [CHANGELOG.md](CHANGELOG.md).
 
+- **v6.1:** `--filter_pos {parser,tagger,either}` replaces `--use_tagger_pos`
+  (kept as an alias for `tagger`). With `either`, which `childes-pipeline.sh`
+  now uses, a row keeps its utterance when the parser's UPOS or the tagger's
+  tag marks it as a verb - the criterion of the R preprocessing. Previously
+  every verb recognised by the tagger alone had an empty `utterance` cell: 11.7%
+  of the Italian verb table, 3.1% of the French one. After re-running all
+  Italian files, none of the 98,236 rows is empty.
 - **Since v6.0 (German, English):** German preposition+article contractions are
   split into UD multiword tokens (`im` -> `in`+`dem`), including the colloquial
   forms spoken data is full of (`aufm`, `ausm`, `durch's`), with an enclitic

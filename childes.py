@@ -10,8 +10,8 @@
 # ///
 
 __author__ = "Achim Stein"
-__version__ = "6.0"
-__status__ = "9.9.26"
+__version__ = "6.1"
+__status__ = "29.10.26"
 __license__ = "GPL"
 
 import sys
@@ -1613,26 +1613,38 @@ class ChatProcessor:
                 node = head[node]
         return True
 
-    def resolve_filter_pos(self, row):
+    def filter_pos_values(self, row):
         """
-        Returns the POS value that --pos_output/--pos_utterance should match against.
-        Default: the parser's universal POS (UPOS, CoNLL-U column 4 / 'conll_4') when
-        --api_model was used - portable across corpora/tagger models, unlike the
-        tagger's own tag. Falls back to the tagger's tag when --use_tagger_pos is
-        given: 'tagger_pos' if present (--tag_ud_tokens combined mode), else 'pos'
-        (plain --parameters mode, where 'pos' itself is the tagger's tag). Also
-        falls back to 'pos' when no parser UPOS is available at all (no --api_model,
-        or this row has none, e.g. untagged punctuation-only row).
+        Returns the POS value(s) that --pos_output/--pos_utterance are matched
+        against, as a list; see matches_filter_pos(). Selected by --filter_pos:
+        'parser' (default): the parser's universal POS (UPOS, CoNLL-U column 4 /
+        'conll_4') when --api_model was used - portable across corpora/tagger
+        models, unlike the tagger's own tag.
+        'tagger': 'tagger_pos' if present (--tag_ud_tokens combined mode), else
+        'pos' (plain --parameters mode, where 'pos' itself is the tagger's tag).
+        'either': all of the above, so a row matches when the parser OR the tagger
+        assigns a matching tag - the criterion by which the R preprocessing builds
+        its verb table (verb_evidence). The regex must then cover both tagsets,
+        e.g. '^(AUX|VERB|VER)'. 'pos' can safely be included, since it always
+        holds one of the two (the tagger's tag in plain --parameters mode, the
+        parser's UPOS otherwise).
+        'parser' and 'tagger' fall back to 'pos' when their own source is empty
+        (no --api_model, or this row has none, e.g. untagged punctuation-only row).
         """
-        if not self.args.use_tagger_pos:
-            upos = row.get('conll_4')
-            if upos and upos != '_':
-                return upos
-        else:
-            tagger_pos = row.get('tagger_pos')
-            if tagger_pos and tagger_pos != '_':
-                return tagger_pos
-        return row.get('pos', '')
+        def usable(v):
+            return bool(v) and v != '_'
+        mode = self.args.filter_pos
+        if mode == 'either':
+            values = [v for v in (row.get('conll_4'), row.get('tagger_pos'), row.get('pos')) if usable(v)]
+            return values or ['']
+        own = row.get('conll_4') if mode == 'parser' else row.get('tagger_pos')
+        if usable(own):
+            return [own]
+        return [row.get('pos', '')]
+
+    def matches_filter_pos(self, pattern, row):
+        """True when any POS value selected by --filter_pos matches the regex."""
+        return any(re.search(pattern, v) for v in self.filter_pos_values(row))
 
     def finalize_output(self, *args, **kwargs):
         """Final processing: run tagger and/or parser, write output files"""
@@ -1646,10 +1658,12 @@ class ChatProcessor:
 
         # --tag_ud_tokens: parse first (UD tokenisation), tag those tokens afterward
         # for an additional pos/lemma. Requires both --parameters and --api_model;
-        # silently has no effect otherwise (matches --utt_tagged/--use_tagger_pos style).
+        # silently has no effect otherwise (matches --utt_tagged/--filter_pos style).
         use_tag_ud_tokens = self.args.tag_ud_tokens and self.args.parameters and self.args.api_model
         if self.args.tag_ud_tokens and not use_tag_ud_tokens:
             sys.stderr.write("  [INFO] --tag_ud_tokens has no effect without both --parameters and --api_model.\n")
+        if self.args.filter_pos != 'parser' and not self.args.parameters:
+            sys.stderr.write(f"  [INFO] --filter_pos {self.args.filter_pos} has no effect without --parameters (no tagger tags): matching the parser's UPOS only.\n")
 
         if self.args.parameters and not use_tag_ud_tokens:
             self.tagger_input_file.seek(0)
@@ -1794,7 +1808,7 @@ class ChatProcessor:
                 row['lemma'] = conll_row[2] if len(conll_row) > 2 and conll_row[2] else '_'
 
             # Utterance filtering logic (applied again later for light version)
-            if self.args.pos_utterance and not re.search(self.args.pos_utterance, self.resolve_filter_pos(row)):
+            if self.args.pos_utterance and not self.matches_filter_pos(self.args.pos_utterance, row):
                  row['utterance'] = row['utt_clean'] = row['utt_tagged'] = ''
 
             # Construct Hyperlink Strings (with doubled quotes inside)
@@ -1841,11 +1855,7 @@ class ChatProcessor:
 
         # filter light version for pos_output constraint
         def keep_light(row: dict) -> bool:
-            pos_val = self.resolve_filter_pos(row)
-            if re.search(re.compile(self.args.pos_output), pos_val):
-                return True  # print row
-            else:
-                return False # skip row
+            return self.matches_filter_pos(self.args.pos_output, row)
 
         with open(tmp_file, mode='r', encoding='utf-8', newline='') as infile, \
             open(parsed_csv_path, mode='w', encoding='utf-8', newline='') as f_parsed, \
@@ -2323,9 +2333,17 @@ if __name__ == "__main__":
     parser.add_argument('--write_conllu', action='store_true', help='(Optional) Write the final parsed CoNLL-U data to a standalone file. Requires --api_model.')
     parser.add_argument('--chunk_parse', type=int, default=10000, help='Number of utterances per API parsing chunk. Default: 10000.')
     parser.add_argument('--chunk_html', type=int, default=1000, help='Number of utterances per HTML output file. Default: 1000.')
-    parser.add_argument('--pos_output', default=".*", type=str, help='Regex to match POS tags. The reduced "light" table will only contain matching rows.\nMatches the parser\'s universal POS (UPOS) when --api_model is used; see --use_tagger_pos.')
-    parser.add_argument('--pos_utterance', type=str, help='Regex to match POS tags. The full utterance text will only be printed on matching rows.\nMatches the parser\'s universal POS (UPOS) when --api_model is used; see --use_tagger_pos.\nDefaults to --pos_output\'s value when not given explicitly.')
-    parser.add_argument('--use_tagger_pos', action='store_true', help='Make --pos_output/--pos_utterance match the tagger\'s own (language/model-specific) POS tag instead of the parser\'s universal POS (UPOS). Has no effect without --parameters; has no effect on rows the tagger did not tag if --api_model is not set (only source of POS in that case).')
+    parser.add_argument('--pos_output', default=".*", type=str, help='Regex to match POS tags. The reduced "light" table will only contain matching rows.\nMatches the parser\'s universal POS (UPOS) when --api_model is used; see --filter_pos.')
+    parser.add_argument('--pos_utterance', type=str, help='Regex to match POS tags. The full utterance text will only be printed on matching rows.\nMatches the parser\'s universal POS (UPOS) when --api_model is used; see --filter_pos.\nDefaults to --pos_output\'s value when not given explicitly.')
+    parser.add_argument('--filter_pos', choices=['parser','tagger','either'], default=None, help=
+                        "Which POS --pos_output/--pos_utterance match against:\n"
+                        "'parser' (default): the parser's universal POS (UPOS), the same across languages;\n"
+                        "'tagger': the tagger's own (language/model-specific) tag;\n"
+                        "'either': a row matches when the parser's UPOS OR the tagger's tag matches.\n"
+                        "With 'either' the regex must cover both tagsets, e.g. '^(AUX|VERB|VER)' for\n"
+                        "Italian (UPOS AUX/VERB, TreeTagger VER:pres ...). 'tagger' and 'either' have no\n"
+                        "effect without --parameters; without --api_model the tagger's tag is the only POS.")
+    parser.add_argument('--use_tagger_pos', action='store_true', help='Same as --filter_pos tagger (kept for compatibility).')
     parser.add_argument('--tag_ud_tokens', action='store_true', help='Requires both --parameters and --api_model. Reverses the default order: parses first with UDPipe\'s own UD-compliant tokenizer, then runs the tagger on those tokens for an ADDITIONAL pos/lemma (columns tagger_pos/tagger_lemma) rather than tagger-tokenising before parsing. \'pos\'/\'lemma\' stay UD-based (parser UPOS/lemma), as in plain --api_model-only mode. No effect if only one of --parameters/--api_model is given.')
     parser.add_argument('--fuse_contractions', choices=['auto','yes','no'], default='auto', help="Keep preposition+determiner contractions (French du/des/au/aux) fused as one token by\n"
                         "tokenising in childes.py, instead of letting UDPipe's tokenizer split them.\n"
@@ -2356,5 +2374,12 @@ if __name__ == "__main__":
     # common "restrict to POS X" case doesn't require passing the same regex twice.
     if args.pos_utterance is None:
         args.pos_utterance = args.pos_output
+    # --use_tagger_pos predates --filter_pos and is now an alias for its 'tagger' value.
+    if args.use_tagger_pos:
+        if args.filter_pos not in (None, 'tagger'):
+            parser.error(f"--use_tagger_pos contradicts --filter_pos {args.filter_pos}")
+        args.filter_pos = 'tagger'
+    elif args.filter_pos is None:
+        args.filter_pos = 'parser'
     processor = ChatProcessor(args)
     processor.run()
