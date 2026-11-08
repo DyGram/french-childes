@@ -666,6 +666,260 @@ package cycle_repair {
   }
 }
 
+% ============================================================
+% Fronted interrogative 'cosa' in the subject slot
+% ============================================================
+%
+% UDPipe-it labels a fronted wh-word nsubj irrespective of its real function,
+% so 'cosa fai ?' comes back with cosa/nsubj and an empty object slot. Over the
+% six Italian CHILDES corpora 5,242 wh-pronouns sit in a subject slot; the
+% coding query then reports them as subjects, which makes any count of overt
+% vs null subjects - the central measure for a null-subject language - unusable.
+%
+% These rules move the wh-word to obj where the structure licenses that reading,
+% and leave it alone where the subject reading is right or undecidable. They do
+% NOT touch:
+%   - relative clauses: in 'la carta che va per terra' the relative pronoun IS
+%     the subject, and the incoming acl edge identifies the configuration;
+%   - existential c'e` / c'ha: in 'cosa c'e` qui ?' cosa IS the subject;
+%   - chi: animate, and the subject in nearly every occurrence ('chi mangia ?');
+%   - che: tried and dropped. A PRON-tagged 'che' in a subject slot is more
+%     often a mis-tagged complementizer or relative ('meno male che ha il
+%     ciuccio', 'che mi da` noia') or a determiner ('che male', 'che verso
+%     fanno i maiali ?') than the interrogative 'what'; of 70 corrections
+%     made on 'che' in a trial run, around 40% were wrong. Interrogative
+%     'che' is in any case marginal beside 'cosa' / 'che cosa' in the
+%     modern language. Only 'cosa' is corrected, including the 'cosa' of
+%     'che cosa', where 'che' is its determiner;
+%   - copular 'cos'e` questo ?', where cosa is the nominal predicate. Putting it
+%     right means re-rooting the copula, which is out of scope here (and the
+%     package that follows exists because root damage fails whole files).
+%
+% The Obj column of italian-verbs.grewlex.tsv cannot carry this decision on its
+% own: it records that a frame is ATTESTED in the gold data, not that it is the
+% only one, so essere (10,053 gold tokens), piacere, mancare and succedere all
+% come out Obj=yes. The verbs for which a fronted 'cosa' is the subject -
+% copular, existential, psych and unaccusative - are therefore listed once, by
+% rule wh_subject_verb below, and every rule guards against that mark.
+%
+% Four licensing conditions, in decreasing strength:
+%   wh_object_agreement          the verb's person/number excludes the wh-word
+%                                as its subject ('cosa facciamo ?', 1pl)
+%   wh_object_second_subject     the verb has a second nsubj, so the slot is taken
+%   wh_object_postverbal_subject a postverbal nominal holds obj and agrees with
+%                                the verb: the two are swapped
+%                                ('cosa ha comprato la nonna ?')
+%   wh_object_transitive         no proof, but the verb is a core transitive and
+%                                its object slot is empty ('cosa cerchi ?').
+%                                This is the one rule that decides on verb class
+%                                rather than on structure; it logs its own name,
+%                                so its share can be counted and discounted.
+%  ---------------------
+% Effects on coding -- checked 8.11.26
+% obj:pro        5124 ->  5699   +575     (cosa arrives; obj=pro already listed it)
+% subj:pro       8084 ->  7509   -575
+% obj:noun      10984 -> 10814   -170     (the swapped postverbal nominals)
+% subj:noun     10763 -> 10933   +170
+% subjpos:pre   13847 -> 13272   -575
+% subjpos:post   8553 ->  8723   +170
+% ============================================================
+
+package wh_subject {
+
+  % One list, consulted by every rule below through the WhSubject mark. The mark
+  % is removed again by unmark at the end of the strategy, so it never reaches
+  % the output.
+  rule wh_subject_verb {
+    pattern { V [upos=VERB|AUX, !WhSubject]; }
+    % copular and predicative
+    pattern { V [lemma="essere"|"stare"|"sembrare"|"parere"|"diventare"|"rimanere"|"restare"
+    % existential, presentational, impersonal
+                |"succedere"|"accadere"|"capitare"|"avvenire"|"bisognare"|"occorrere"|"toccare"
+    % psych / experiencer: the wh-word is the stimulus subject
+                |"piacere"|"dispiacere"|"mancare"|"importare"|"interessare"|"servire"|"bastare"
+    % unaccusative: the wh-word is the single argument
+                |"andare"|"venire"|"arrivare"|"partire"|"tornare"|"uscire"|"entrare"|"salire"|"scendere"
+                |"cadere"|"cascare"|"nascere"|"morire"|"crescere"|"scoppiare"|"esistere"
+                |"apparire"|"sparire"|"scomparire"|"finire"|"cominciare"|"iniziare"
+                |"durare"|"costare"|"pesare"|"funzionare"
+    % inanimate-subject verbs: "cosa significa ?", "cosa conta ?"
+                |"significare"|"valere"|"contare"|"dipendere"|"risultare"|"giocare"
+                |"riuscire"|"somigliare"|"assomigliare"
+    % unergative: an inanimate 'cosa' subject is still available
+                |"vivere"|"correre"|"passare"|"ridere"|"piangere"|"dormire"|"volare"]; }
+    commands { V.WhSubject = "yes"; }
+  }
+
+  % A past participle with an 'essere' auxiliary is a periphrastic passive, an
+  % unaccusative perfect or a reflexive, and in all three the preverbal wh-word
+  % is the subject: 'che cosa e` disegnato ?', 'cos'e` schiacciato ?', 'cosa si
+  % e` rotto ?', 'cosa c'e` scritto ?'. UDPipe-it labels only one case in four
+  % nsubj:pass, so the edge label cannot carry this. The price is 'cosa s'e`
+  % fatta la bimba ?', where the wh-word IS the object; that reading needs the
+  % reflexive to be told from the anticausative, which the parse does not say.
+  rule wh_subject_passive {
+    pattern {
+      V [upos=VERB, VerbForm="Part", !WhSubject];
+      AE [lemma="essere"]; V -[1=aux]-> AE;
+    }
+    commands { V.WhSubject = "yes"; }
+  }
+
+  % ---------- 1. the verb's agreement excludes the wh-word ----------
+  % 'cosa facciamo ?', 'che cosa hanno detto ?': a 1st/2nd person or plural verb
+  % cannot have the 3rd person singular wh-word as its subject.
+
+  rule agreement_person (verbs from "italian-verbs.grewlex.tsv") {
+    pattern {
+      V [upos=VERB|AUX, lemma=verbs.lemma, Person="1"|"2", !WhSubject]; verbs.Obj = "yes";
+      WH [upos=PRON, lemma="cosa"];
+      WH << V;
+      e: V -[1=nsubj]-> WH;
+    }
+    without { H -[1=acl]-> V; }
+    without { WH < X; X [upos=NOUN|PROPN|ADJ]; }   % che male, che animale: a determiner
+    without { V -[1=obj]-> O; }
+    without { CI [lemma="ci"|"ce"]; V -[1=expl]-> CI; CI < V; }
+    commands { del_edge e; add_edge V -[obj]-> WH;
+               V.fix = V.fix + "," + "wh_object_agreement";
+               WH.fix = "wh_object_agreement"; }
+  }
+
+  % the same, with the agreement on the auxiliary: 'cosa abbiamo fatto ?'
+  rule agreement_person_aux (verbs from "italian-verbs.grewlex.tsv") {
+    pattern {
+      V [upos=VERB|AUX, lemma=verbs.lemma, !WhSubject]; verbs.Obj = "yes";
+      A [Person="1"|"2"]; V -[1=aux]-> A;
+      WH [upos=PRON, lemma="cosa"];
+      WH << V;
+      e: V -[1=nsubj]-> WH;
+    }
+    without { H -[1=acl]-> V; }
+    without { WH < X; X [upos=NOUN|PROPN|ADJ]; }   % che male, che animale: a determiner
+    without { V -[1=obj]-> O; }
+    without { CI [lemma="ci"|"ce"]; V -[1=expl]-> CI; CI < V; }
+    commands { del_edge e; add_edge V -[obj]-> WH;
+               V.fix = V.fix + "," + "wh_object_agreement";
+               WH.fix = "wh_object_agreement"; }
+  }
+
+  % 'cosa fanno ?': a plural verb cannot have a singular wh-word as its subject.
+  % Tested with a 'without' rather than WH [Number="Sing"], because 'che' carries
+  % no Number at all and would then be skipped.
+  rule agreement_number (verbs from "italian-verbs.grewlex.tsv") {
+    pattern {
+      V [upos=VERB|AUX, lemma=verbs.lemma, Number="Plur", !WhSubject]; verbs.Obj = "yes";
+      WH [upos=PRON, lemma="cosa"];
+      WH << V;
+      e: V -[1=nsubj]-> WH;
+    }
+    without { WH [Number="Plur"]; }
+    without { H -[1=acl]-> V; }
+    without { WH < X; X [upos=NOUN|PROPN|ADJ]; }   % che male, che animale: a determiner
+    without { V -[1=obj]-> O; }
+    without { CI [lemma="ci"|"ce"]; V -[1=expl]-> CI; CI < V; }
+    commands { del_edge e; add_edge V -[obj]-> WH;
+               V.fix = V.fix + "," + "wh_object_agreement";
+               WH.fix = "wh_object_agreement"; }
+  }
+
+  rule agreement_number_aux (verbs from "italian-verbs.grewlex.tsv") {
+    pattern {
+      V [upos=VERB|AUX, lemma=verbs.lemma, !WhSubject]; verbs.Obj = "yes";
+      A [Number="Plur"]; V -[1=aux]-> A;
+      WH [upos=PRON, lemma="cosa"];
+      WH << V;
+      e: V -[1=nsubj]-> WH;
+    }
+    without { WH [Number="Plur"]; }
+    without { H -[1=acl]-> V; }
+    without { WH < X; X [upos=NOUN|PROPN|ADJ]; }   % che male, che animale: a determiner
+    without { V -[1=obj]-> O; }
+    without { CI [lemma="ci"|"ce"]; V -[1=expl]-> CI; CI < V; }
+    commands { del_edge e; add_edge V -[obj]-> WH;
+               V.fix = V.fix + "," + "wh_object_agreement";
+               WH.fix = "wh_object_agreement"; }
+  }
+
+  % ---------- 2. the subject slot is taken by a second nsubj ----------
+  % 'cosa ti ha detto il babbo ?' - UDPipe gives the verb two subjects; the
+  % wh-word is the one that is not one. S is a different node from WH by
+  % injectivity, so no explicit inequality is needed.
+  rule second_subject (verbs from "italian-verbs.grewlex.tsv") {
+    pattern {
+      V [upos=VERB|AUX, lemma=verbs.lemma, !WhSubject]; verbs.Obj = "yes";
+      WH [upos=PRON, lemma="cosa"];
+      S []; V -[1=nsubj]-> S;
+      WH << V;
+      e: V -[1=nsubj]-> WH;
+    }
+    without { H -[1=acl]-> V; }
+    without { WH < X; X [upos=NOUN|PROPN|ADJ]; }   % che male, che animale: a determiner
+    without { V -[1=obj]-> O; }
+    without { CI [lemma="ci"|"ce"]; V -[1=expl]-> CI; CI < V; }
+    commands { del_edge e; add_edge V -[obj]-> WH;
+               V.fix = V.fix + "," + "wh_object_second_subject";
+               WH.fix = "wh_object_second_subject"; }
+  }
+
+  % ---------- 3. postverbal subject read as the object ----------
+  % 'cosa ha comprato la nonna ?', 'cosa fanno i bambini ?': the postverbal
+  % subject - unremarkable in an Italian wh-question - is taken for the object,
+  % and the wh-word for the subject. The two are exchanged. Number agreement
+  % between the verb and the nominal is required: it is what distinguishes a
+  % displaced subject from an object the parser attached correctly, and it fails
+  % safely when either node lacks the feature.
+  rule postverbal_subject (verbs from "italian-verbs.grewlex.tsv") {
+    pattern {
+      V [upos=VERB|AUX, lemma=verbs.lemma, !WhSubject]; verbs.Obj = "yes";
+      WH [upos=PRON, lemma="cosa"];
+      N [upos=NOUN|PROPN]; N.Number = V.Number;
+      WH << V; V << N;
+      e: V -[1=nsubj]-> WH;
+      eo: V -[1=obj]-> N;
+    }
+    without { H -[1=acl]-> V; }
+    without { WH < X; X [upos=NOUN|PROPN|ADJ]; }   % che male, che animale: a determiner
+    without { CI [lemma="ci"|"ce"]; V -[1=expl]-> CI; CI < V; }
+    commands { del_edge e; del_edge eo;
+               add_edge V -[obj]-> WH; add_edge V -[nsubj]-> N;
+               V.fix = V.fix + "," + "wh_object_postverbal_subject";
+               WH.fix = "wh_object_postverbal_subject";
+               N.fix = "wh_object_postverbal_subject"; }
+  }
+
+  % ---------- 4. core transitive verb with an empty object slot ----------
+  % 'cosa cerchi ?', 'cosa mangia ?'. No structural proof here: the verb is 3rd
+  % singular, the subject is null, and 'cosa fa ?' is in principle ambiguous
+  % between 'what is he doing' and 'what does it do'. The decision rests on the
+  % verb being a core transitive and not one of the verbs listed in
+  % wh_subject_verb. Logged under its own name so that it can be counted
+  % separately, or discounted.
+  rule transitive_verb (verbs from "italian-verbs.grewlex.tsv") {
+    pattern {
+      V [upos=VERB|AUX, lemma=verbs.lemma, !WhSubject]; verbs.Obj = "yes";
+      WH [upos=PRON, lemma="cosa"];
+      WH << V;
+      e: V -[1=nsubj]-> WH;
+    }
+    without { H -[1=acl]-> V; }
+    without { WH < X; X [upos=NOUN|PROPN|ADJ]; }   % che male, che animale: a determiner
+    without { V -[1=obj]-> O; }
+    without { V -[1=nsubj]-> S; }           % handled by second_subject
+    without { CI [lemma="ci"|"ce"]; V -[1=expl]-> CI; CI < V; }
+    commands { del_edge e; add_edge V -[obj]-> WH;
+               V.fix = V.fix + "," + "wh_object_transitive";
+               WH.fix = "wh_object_transitive"; }
+  }
+
+  % The mark is working memory for the rules above, not annotation: an unknown
+  % feature would otherwise be written to MISC.
+  rule unmark {
+    pattern { V [WhSubject]; }
+    commands { del_feat V.WhSubject; }
+  }
+}
+
 strat main {
   Seq (
     Onf (enclitic_host_repair.ecco_host),
@@ -717,7 +971,19 @@ strat main {
     Onf (amalgami.split_di_after_nominal),
     Onf (amalgami.split_di_count_noun),
     Onf (amalgami.split_di_pp),
-    Onf (amalgami.fuse_contraction)
+    Onf (amalgami.fuse_contraction),
+    % fronted interrogative 'cosa' in the subject slot: last, so that the
+    % object slot the guards consult is the one the clitic rules settled
+    Onf (wh_subject.wh_subject_verb),
+    Onf (wh_subject.wh_subject_passive),
+    Onf (wh_subject.agreement_person),
+    Onf (wh_subject.agreement_person_aux),
+    Onf (wh_subject.agreement_number),
+    Onf (wh_subject.agreement_number_aux),
+    Onf (wh_subject.second_subject),
+    Onf (wh_subject.postverbal_subject),
+    Onf (wh_subject.transitive_verb),
+    Onf (wh_subject.unmark)
   )
 }
 
