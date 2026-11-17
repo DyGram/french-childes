@@ -1,0 +1,527 @@
+# sent_id = init_and_cosa_already_obj
+# expect_fix = none
+# expect_no_fix = wh_object_second_subject
+# expect_no_fix = wh_object_transitive
+# expect_token = 1 head=2 deprel=obj
+# expect_absent = WhSubject
+# note = Antelmi 30170_u462. init_fix_misc gives every verb fix=none. cosa is already obj in the parse, so no wh rule touches it.
+# text = cosa fai tu ?
+1	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	2	obj	_	_
+2	fai	fare	VERB	V	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	tu	tu	PRON	PE	Number=Sing|Person=2|PronType=Prs	2	nsubj	_	_
+4	?	?	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = clitic_features_single_acc
+# expect_fix = single_acc
+# expect_token = 2 upos=PRON Clitic=Yes head=1 deprel=obj
+# note = Antelmi 30172_u455. lo comes back DET, det of te. clitic_features makes it PRON Clitic=Yes (its own fix= is then overwritten), reattach_single hangs it off the host, single_acc labels it obj.
+# text = leggilo te .
+1-2	leggilo	_	_	_	_	_	_	_	_
+1	leggi	legge	VERB	V	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=B
+2	lo	lo	DET	RD	Definite=Def|Gender=Masc|Number=Sing|PronType=Art	3	det	_	_
+3	te	te	PRON	PC	Clitic=Yes|Number=Sing|Person=2|PronType=Prs	1	obj	_	_
+4	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = clitic_features_second_cluster_obj
+# expect_fix = cluster_second_obj
+# expect_token = 2 head=1 deprel=iobj
+# expect_token = 3 upos=PRON Clitic=Yes head=1 deprel=obj
+# note = Roma 30276_u384. la (DET, det of qua) is the second clitic of me+la: clitic_features_second, reattach_second, cluster_second_obj.
+# text = Portamela qua .
+1-3	Portamela	_	_	_	_	_	_	_	_
+1	Porta	portare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=A
+2	me	me	PRON	PC	Clitic=Yes|Number=Sing|Person=1|PronType=Prs	1	iobj	_	_
+3	la	il	DET	RD	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	4	det	_	_
+4	qua	qua	NOUN	S	Gender=Fem|Number=Sing	1	obj	_	_
+5	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = cluster_first_dat
+# expect_fix = cluster_first_dat
+# expect_token = 2 head=1 deprel=iobj
+# expect_token = 3 head=1 deprel=obj
+# note = D_Odorico 30254_u632. glie comes back expl.
+# text = mettiglielo .
+1-3	mettiglielo	_	_	_	_	_	_	_	_
+1	metti	metto	VERB	V	Mood=Imp|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=A
+2	glie	gli	PRON	PC	Clitic=Yes|Person=3|PronType=Prs	1	expl	_	_
+3	lo	lo	PRON	PC	Clitic=Yes|Gender=Masc|Number=Sing|Person=3|PronType=Prs	1	obj	_	_
+4	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = cluster_second_ne_from_first
+# expect_fix = cluster_first_dat
+# expect_fix = cluster_second_ne
+# expect_token = 1 upos=VERB lemma=dare head=0 deprel=root
+# expect_token = 2 head=1 deprel=iobj
+# expect_token = 3 head=1 deprel=iobj
+# note = D_Odorico 30261_u129. da is case of glie, glie is the root, ne hangs off glie. host_promote makes da the root, reattach_second_from_first moves ne to it, lemma_dare fixes the lemma.
+# text = dagliene un pochino dai !
+1-3	dagliene	_	_	_	_	_	_	_	_
+1	da	da	ADP	E	_	2	case	_	Enclitic=A
+2	glie	gli	PRON	PC	Clitic=Yes|Person=3|PronType=Prs	0	root	_	_
+3	ne	ne	PRON	PC	Clitic=Yes|PronType=Prs	2	iobj	_	_
+4	un	uno	DET	RI	Definite=Ind|Gender=Masc|Number=Sing|PronType=Art	5	det	_	_
+5	pochino	pochino	NOUN	S	Gender=Masc|Number=Sing	2	nsubj	_	_
+6	dai	dare	ADV	B	_	5	advmod	_	_
+7	!	!	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = single_dat_gli
+# expect_fix = single_dat_gli
+# expect_token = 2 upos=PRON head=1 deprel=iobj
+# note = Roma 30276_u12. gli comes back DET, det of cara.
+# text = fagli cara .
+1-2	fagli	_	_	_	_	_	_	_	_
+1	fa	fare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=B
+2	gli	il	DET	RD	Definite=Def|Gender=Masc|Number=Plur|PronType=Art	3	det	_	_
+3	cara	cara	NOUN	S	Gender=Masc|Number=Sing	1	obj	_	_
+4	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = single_12_transitive_verb
+# expect_fix = single_12_transitive_verb
+# expect_no_fix = single_12_undecided
+# expect_token = 2 head=1 deprel=obj
+# note = D_Odorico 30257_u213. scusare is Obj=yes, Iobj=no in the lexicon.
+# text = scusami .
+1-2	scusami	_	_	_	_	_	_	_	_
+1	scusa	scusare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=B
+2	mi	mi	PRON	PC	Clitic=Yes|Number=Sing|Person=1|PronType=Prs	1	nsubj	_	_
+3	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = single_12_undecided
+# expect_fix = single_12_undecided
+# expect_token = 2 head=1 deprel=obj todo=obj_or_iobj
+# note = Tonelli 30289_u71. raccontare has both frames in the lexicon: marked todo, not guessed.
+# text = raccontami .
+1-2	raccontami	_	_	_	_	_	_	_	_
+1	racconta	raccontare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=B
+2	mi	mi	PRON	PC	Clitic=Yes|Number=Sing|Person=1|PronType=Prs	1	nsubj	_	_
+3	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = ecco_clitic_host_already_adv
+# expect_fix = ecco_clitic
+# expect_no_fix = imperative_host_singular
+# expect_token = 1 upos=ADV head=0 deprel=root
+# expect_token = 2 head=1 deprel=expl
+# note = Antelmi 30172_u481. ci is the root with ecco under it: host_promote, then ecco_clitic. ecco is already ADV, so the imperative catch-all must leave it alone (31 of 53 ecco hosts in Roma).
+# text = eccoci .
+1-2	eccoci	_	_	_	_	_	_	_	_
+1	ecco	ecco	ADV	B	_	2	advmod	_	Enclitic=A
+2	ci	ci	PRON	PC	Clitic=Yes|Number=Plur|Person=1|PronType=Prs	0	root	_	_
+3	.	.	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = imperative_host_lemma_dare
+# expect_fix = imperative_host_singular
+# expect_token = 1 upos=VERB lemma=dare Mood=Imp Person=2 Number=Sing
+# note = Antelmi 30168_u335. dam comes back X with lemma dam.
+# text = dammi in mano !
+1-2	dammi	_	_	_	_	_	_	_	_
+1	dam	dam	X	X	_	0	root	_	Enclitic=A
+2	mi	mi	PRON	PC	Clitic=Yes|Number=Sing|Person=1|PronType=Prs	1	expl	_	_
+3	in	in	ADP	E	_	4	case	_	_
+4	mano	mano	NOUN	S	Gender=Fem|Number=Sing	1	nmod	_	_
+5	!	!	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = lemma_dire
+# expect_fix = imperative_host_singular
+# expect_token = 1 upos=VERB lemma=dire
+# note = Tonelli 30300_u392.
+# text = dimmi una cosina via .
+1-2	dimmi	_	_	_	_	_	_	_	_
+1	dim	dim	X	X	_	0	root	_	Enclitic=A
+2	mi	mi	PRON	PC	Clitic=Yes|Number=Sing|Person=1|PronType=Prs	1	expl	_	_
+3	una	uno	DET	RI	Definite=Ind|Gender=Fem|Number=Sing|PronType=Art	5	det	_	_
+4	cosina	cosa	ADJ	A	Gender=Fem|Number=Sing	5	amod	_	_
+5	via	vio	NOUN	S	Gender=Fem|Number=Sing	1	nsubj	_	_
+6	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = lemma_fare
+# expect_token = 2 upos=VERB lemma=fare
+# expect_token = 3 head=2
+# note = D_Odorico 30254_u369. mi comes back flat:foreign of fam.
+# text = aspetta fammi vedere .
+1	aspetta	aspettare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+2-3	fammi	_	_	_	_	_	_	_	_
+2	fam	fam	X	X	_	1	obj	_	Enclitic=A
+3	mi	mi	PRON	PC	Clitic=Yes|Number=Sing|Person=1|PronType=Prs	2	flat:foreign	_	_
+4	vedere	vedere	VERB	V	VerbForm=Inf	1	advcl	_	_
+5	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = infinitive_host_promote
+# expect_fix = infinitive_host
+# expect_token = 3 upos=VERB VerbForm=Inf head=1
+# expect_token = 4 head=3
+# note = D_Odorico 30259_u105. seder comes back ADP, case of ti, and ti is obl of sai: host_promote gives seder the clitic's place.
+# text = sai neanche sederti tu .
+1	sai	sapere	VERB	V	Mood=Ind|Number=Sing|Person=1|Tense=Past|VerbForm=Fin	0	root	_	_
+2	neanche	neanche	ADV	BN	PronType=Neg	1	advmod	_	_
+3-4	sederti	_	_	_	_	_	_	_	_
+3	seder	seder	ADP	E	_	4	case	_	Enclitic=A
+4	ti	ti	PRON	PC	Clitic=Yes|Number=Sing|Person=2|PronType=Prs	1	obl	_	_
+5	tu	tu	PRON	PE	Number=Sing|Person=2|PronType=Prs	1	nsubj	_	_
+6	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = host_promote_second
+# expect_token = 1 upos=VERB lemma=dire head=0 deprel=root
+# expect_token = 2 head=1 deprel=iobj
+# expect_token = 3 head=1 deprel=obj
+# note = D_Odorico 30256_u626. di is case of glie, glie nmod of lo, lo the root: both promotions are needed.
+# text = diglielo .
+1-3	diglielo	_	_	_	_	_	_	_	_
+1	di	di	ADP	E	_	2	case	_	Enclitic=A
+2	glie	gli	PRON	PC	Clitic=Yes|Person=3|PronType=Prs	3	nmod	_	_
+3	lo	lo	PRON	PC	Clitic=Yes|Gender=Masc|Number=Sing|Person=3|PronType=Prs	0	root	_	_
+4	.	.	PUNCT	FS	_	3	punct	_	_
+
+# sent_id = root_clitic_promote
+# expect_token = 2 lemma=dare head=0 deprel=root
+# expect_token = 3 head=2 deprel=iobj
+# expect_token = 4 head=2 deprel=obj
+# note = D_Odorico 30254_u707. lo is the root, the host da is fixed under dai.
+# text = dai dammelo .
+1	dai	dare	ADV	B	_	3	case	_	_
+2-4	dammelo	_	_	_	_	_	_	_	_
+2	da	da	ADP	E	_	1	fixed	_	Enclitic=A
+3	me	me	PRON	PE	Number=Sing|Person=1|PronType=Prs	4	obl	_	_
+4	lo	lo	PRON	PC	Clitic=Yes|Gender=Masc|Number=Sing|Person=3|PronType=Prs	0	root	_	_
+5	.	.	PUNCT	FS	_	4	punct	_	_
+
+# sent_id = clitic_check_needs_textform
+# expect_no_fix = cluster_second_obj
+# expect_no_fix = single_acc
+# expect_token = 3 upos=DET head=4 deprel=det
+# note = Tonelli 30294_u299. la is the article of macchinona, adjacent to a one-clitic host: it must not become a second clitic.
+# text = dammi la macchinona .
+1-2	dammi	_	_	_	_	_	_	_	_
+1	dam	dam	NOUN	S	Gender=Masc	0	root	_	Enclitic=A
+2	mi	mi	PRON	PC	Clitic=Yes|Number=Sing|Person=1|PronType=Prs	1	nmod	_	_
+3	la	il	DET	RD	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	4	det	_	_
+4	macchinona	macchinona	NOUN	S	Gender=Fem|Number=Sing	2	nsubj	_	_
+5	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = cand_is_not_a_host
+# expect_no_fix = imperative_host_singular
+# expect_token = 6 upos=ADJ
+# note = Antelmi 30170_u10. capivi is marked Enclitic=Cand (not split) and tagged ADJ: it must not be made an imperative.
+# text = quando eri piccola e non capivi .
+1	quando	quando	SCONJ	CS	_	3	mark	_	_
+2	eri	ero	ADV	B	_	3	advmod	_	_
+3	piccola	piccolo	ADJ	A	Gender=Fem|Number=Sing	0	root	_	_
+4	e	e	CCONJ	CC	_	6	cc	_	_
+5	non	non	ADV	BN	PronType=Neg	6	advmod	_	_
+6	capivi	capivo	ADJ	A	Number=Plur	3	conj	_	Enclitic=Cand
+7	.	.	PUNCT	FS	_	3	punct	_	_
+
+# sent_id = split_di_after_nominal
+# expect_fix = split_di_after_nominal
+# expect_words = pelo di il lupo .
+# expect_mwt = 2-3 del
+# expect_token = 2 upos=ADP head=4 deprel=case
+# note = Burgato 100563_u25.
+# text = pelo del lupo.
+1	pelo	pelo	NOUN	S	Gender=Masc|Number=Sing	0	root	_	_
+2	del	di	DET	DI	Gender=Masc|Number=Sing|PronType=Ind	3	det	_	_
+3	lupo	lupo	NOUN	S	Gender=Masc|Number=Sing	1	nmod	_	SpaceAfter=No
+4	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = split_di_count_noun
+# expect_fix = split_di_count_noun
+# expect_words = di la scuola .
+# expect_mwt = 1-2 della
+# note = Antelmi 30174_u15.
+# text = della scuola .
+1	della	dellare	DET	DD	Gender=Fem|Number=Sing|PronType=Dem	2	det	_	_
+2	scuola	scuola	NOUN	S	Gender=Fem|Number=Sing	0	root	_	_
+3	.	.	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = split_di_pp
+# expect_fix = split_di_pp
+# expect_mwt = 6-7 delle
+# note = D_Odorico 30259_u109.
+# text = eh , la pappa tu delle mucche .
+1	eh	eh	INTJ	I	_	0	root	_	_
+2	,	,	PUNCT	FF	_	1	punct	_	_
+3	la	il	DET	RD	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	4	det	_	_
+4	pappa	pappa	NOUN	S	Gender=Fem|Number=Sing	1	appos	_	_
+5	tu	tu	PRON	PE	Number=Sing|Person=2|PronType=Prs	7	nsubj	_	_
+6	delle	di	DET	DI	Gender=Fem|Number=Plur|PronType=Ind	7	det	_	_
+7	mucche	mucca	NOUN	S	Gender=Fem|Number=Plur	4	nmod	_	_
+8	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = fuse_contraction
+# expect_fix = fuse_contraction
+# expect_words = a la .
+# expect_mwt = 1-2 alla
+# note = Antelmi 30172_u200. childes.py pre-split alla and marked it Amalgama=alla.
+# text = alla .
+1	a	a	ADP	E	_	2	case	_	Amalgama=alla
+2	la	il	PRON	PC	Clitic=Yes|Gender=Fem|Number=Sing|Person=3|PronType=Prs	0	root	_	_
+3	.	.	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = con_la_stays_apart
+# expect_no_fix = fuse_contraction
+# expect_words = con la mamma .
+# expect_mwt = 
+# note = D_Odorico 30264_u223. written apart by the transcriber, so no Amalgama mark: must not become colla.
+# text = con la mamma .
+1	con	con	ADP	E	_	3	case	_	_
+2	la	il	DET	RD	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	3	det	_	_
+3	mamma	mamma	NOUN	S	Gender=Fem|Number=Sing	0	root	_	_
+4	.	.	PUNCT	FS	_	3	punct	_	_
+
+# sent_id = dalla_is_not_split
+# expect_no_fix = fuse_contraction
+# expect_words = dalla a mamma .
+# expect_mwt = 
+# note = Roma 30284_u386. dalla is a dare homograph and is never pre-split.
+# text = dalla a mamma .
+1	dalla	dallare	NOUN	S	Gender=Masc	0	root	_	_
+2	a	a	ADP	E	_	3	case	_	_
+3	mamma	mamma	NOUN	S	Gender=Fem|Number=Sing	1	nmod	_	_
+4	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = wh_agreement_person
+# expect_fix = wh_object_agreement
+# expect_token = 2 head=4 deprel=obj
+# expect_absent = WhSubject
+# note = Tonelli 30319_u505.
+# text = che cosa non vuoi ?
+1	che	che	SCONJ	CS	_	4	mark	_	_
+2	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	4	nsubj	_	_
+3	non	non	ADV	BN	PronType=Neg	4	advmod	_	_
+4	vuoi	volere	VERB	V	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	0	root	_	_
+5	?	?	PUNCT	FS	_	4	punct	_	_
+
+# sent_id = wh_agreement_person_aux
+# expect_fix = wh_object_agreement
+# expect_token = 1 head=3 deprel=obj
+# note = Tonelli 30321_u98.
+# text = cos' hai trovato ?
+1	cos'	cosa	PRON	PQ	Number=Sing|PronType=Int	3	nsubj	_	_
+2	hai	avere	AUX	VA	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	3	aux	_	_
+3	trovato	trovare	VERB	V	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	0	root	_	_
+4	?	?	PUNCT	FS	_	3	punct	_	_
+
+# sent_id = wh_agreement_number
+# expect_fix = wh_object_agreement
+# expect_token = 1 head=2 deprel=obj
+# note = Tonelli 30302_u335.
+# text = cos' hanno ?
+1	cos'	cosa	PRON	PQ	Number=Sing|PronType=Int	2	nsubj	_	_
+2	hanno	avere	VERB	V	Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	?	?	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = wh_agreement_number_aux
+# expect_fix = wh_object_agreement
+# expect_token = 1 head=3 deprel=obj
+# expect_absent = WhSubject
+# note = D_Odorico 30267_u299.
+# text = cosa stanno facendo ?
+1	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	3	nsubj	_	_
+2	stanno	stare	AUX	VA	Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin	3	aux	_	_
+3	facendo	fare	VERB	V	VerbForm=Ger	0	root	_	_
+4	?	?	PUNCT	FS	_	3	punct	_	_
+
+# sent_id = wh_second_subject
+# expect_fix = wh_object_second_subject
+# expect_token = 4 head=5 deprel=obj
+# expect_token = 2 head=5 deprel=nsubj
+# note = Tonelli 30285_u61.
+# text = e Giovanni invece cosa mangia ?
+1	e	e	CCONJ	CC	_	5	cc	_	_
+2	Giovanni	Giovanni	PROPN	SP	_	5	nsubj	_	_
+3	invece	invece	ADV	B	_	5	advmod	_	_
+4	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	5	nsubj	_	_
+5	mangia	mangiare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+6	?	?	PUNCT	FS	_	5	punct	_	_
+
+# sent_id = wh_postverbal_subject
+# expect_fix = wh_object_postverbal_subject
+# expect_token = 1 head=2 deprel=obj
+# expect_token = 3 head=2 deprel=nsubj
+# note = Burgato 100560_u105.
+# text = cosa fa lupo?
+1	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	2	nsubj	_	_
+2	fa	fare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	lupo	lupo	NOUN	S	Gender=Masc|Number=Sing	2	obj	_	SpaceAfter=No
+4	?	?	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = wh_transitive
+# expect_fix = wh_object_transitive
+# expect_token = 1 head=2 deprel=obj
+# note = Antelmi 30168_u297. trovi comes back 3rd person subjunctive, so only the verb class decides.
+# text = cosa trovi ?
+1	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	2	nsubj	_	_
+2	trovi	trovare	VERB	V	Mood=Sub|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	?	?	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = wh_subject_verb_succedere
+# expect_no_fix = wh_object_transitive
+# expect_token = 1 head=2 deprel=nsubj
+# expect_absent = WhSubject
+# note = D_Odorico 30255_u354. succedere is on the wh_subject_verb list: cosa stays the subject.
+# text = cosa succede ?
+1	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	2	nsubj	_	_
+2	succede	succedere	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	?	?	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = wh_subject_passive
+# expect_no_fix = wh_object_transitive
+# expect_token = 1 head=3 deprel=nsubj
+# expect_absent = WhSubject
+# note = Burgato 100576_u67. participle with an essere auxiliary.
+# text = cos'è successo?
+1	cos'	cosa	PRON	PQ	Number=Sing|PronType=Int	3	nsubj	_	SpaceAfter=No
+2	è	essere	AUX	VA	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	3	aux	_	_
+3	successo	successo	VERB	V	Gender=Masc|Number=Sing|Tense=Past|VerbForm=Part	0	root	_	SpaceAfter=No
+4	?	?	PUNCT	FS	_	3	punct	_	_
+
+# sent_id = wh_ci_vuole_subject
+# expect_no_fix = wh_object_transitive
+# expect_token = 1 deprel=nsubj
+# note = Tonelli 30287_u86. ci vuole: cosa is the subject, the preverbal ci guard must hold.
+# text = cosa ci vuole ancora ?
+1	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	3	nsubj	_	_
+2	ci	ci	PRON	PC	Clitic=Yes|PronType=Prs	3	expl	_	_
+3	vuole	volere	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+4	ancora	ancora	ADV	B	_	3	advmod	_	_
+5	?	?	PUNCT	FS	_	3	punct	_	_
+
+# sent_id = wh_che_cosa_already_obj
+# expect_no_fix = wh_object_transitive
+# expect_token = 2 head=3 deprel=obj
+# note = D_Odorico 30268_u430.
+# text = che cosa ha ?
+1	che	che	DET	DQ	PronType=Int	2	det	_	_
+2	cosa	cosa	PRON	PQ	Number=Sing|PronType=Int	3	obj	_	_
+3	ha	avere	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+4	?	?	PUNCT	FS	_	3	punct	_	_
+
+# sent_id = single_ne
+# expect_fix = single_ne
+# note = Calambrone 30232_u673. the one single_ne firing in the corpus that is not a babble or a proclitic gliene.
+# text = diglielo “mangiane pochine che poi vi sente la pancia” .
+1-3	diglielo	_	_	_	_	_	_	_	_
+1	di	di	ADP	E	_	2	case	_	Enclitic=A
+2	glie	gli	PRON	PC	Clitic=Yes|Person=3|PronType=Prs	5	expl	_	_
+3	lo	lo	PRON	PC	Clitic=Yes|Gender=Masc|Number=Sing|Person=3|PronType=Prs	5	obj	_	_
+4	“	“	PUNCT	FB	_	5	punct	_	SpaceAfter=No
+5-6	mangiane	_	_	_	_	_	_	_	_
+5	mangia	mangiare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=B
+6	ne	ne	PRON	PC	Clitic=Yes|PronType=Prs	7	iobj	_	_
+7	pochine	pochine	NOUN	S	_	5	advcl	_	_
+8	che	che	SCONJ	CS	_	11	mark	_	_
+9	poi	poi	ADV	B	_	11	advmod	_	_
+10	vi	vi	PRON	PC	Clitic=Yes|PronType=Prs	11	iobj	_	_
+11	sente	sentire	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	7	advcl	_	_
+12	la	il	DET	RD	Definite=Def|Gender=Fem|Number=Sing|PronType=Art	13	det	_	_
+13	pancia	pancia	NOUN	S	Gender=Fem|Number=Sing	11	obj	_	SpaceAfter=No
+14	”	”	PUNCT	FB	_	5	punct	_	_
+15	.	.	PUNCT	FS	_	5	punct	_	_
+
+# sent_id = single_refl_si
+# expect_fix = single_refl_si
+# expect_token = 5 head=4 deprel=expl
+# note = Calambrone 30216_u492.
+# text = li mettiamo a riposarsi e si svegliano a primavera sai Martina niente , Martina .
+1	li	li	PRON	PC	Clitic=Yes|Gender=Masc|Number=Plur|Person=3|PronType=Prs	2	obj	_	_
+2	mettiamo	mettere	VERB	V	Mood=Ind|Number=Plur|Person=1|Tense=Pres|VerbForm=Fin	0	root	_	_
+3	a	a	ADP	E	_	4	mark	_	_
+4-5	riposarsi	_	_	_	_	_	_	_	_
+4	riposar	riposare	VERB	V	VerbForm=Inf	2	xcomp	_	Enclitic=A
+5	si	si	PRON	PC	Clitic=Yes|Person=3|PronType=Prs	4	obj	_	_
+6	e	e	CCONJ	CC	_	8	cc	_	_
+7	si	si	PRON	PC	Clitic=Yes|Person=3|PronType=Prs	8	expl	_	_
+8	svegliano	svegliare	VERB	V	Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin	2	conj	_	_
+9	a	a	ADP	E	_	10	case	_	_
+10	primavera	primavera	NOUN	S	Gender=Fem|Number=Sing	8	obl	_	_
+11	sai	sapere	VERB	V	Mood=Ind|Number=Sing|Person=2|Tense=Pres|VerbForm=Fin	8	advcl	_	_
+12	Martina	Martina	PROPN	SP	_	11	obj	_	_
+13	niente	niente	PRON	PI	Gender=Masc|Number=Sing|PronType=Ind	12	flat:name	_	_
+14	,	,	PUNCT	FF	_	12	punct	_	_
+15	Martina	Martina	PROPN	SP	_	12	flat:name	_	_
+16	.	.	PUNCT	FS	_	2	punct	_	_
+
+# sent_id = single_12_iobj_with_object
+# expect_fix = single_12_iobj_with_object
+# expect_token = 2 head=1 deprel=iobj
+# note = Calambrone 30195_u661. lavare + a noun object: le is the dative. Right in 5 of the rule's 35 firings, see the known-bugs file.
+# text = lavale i capelli .
+1-2	lavale	_	_	_	_	_	_	_	_
+1	lava	lavare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=B
+2	le	il	DET	RD	Definite=Def|Gender=Fem|Number=Plur|PronType=Art	4	det	_	_
+3	i	il	DET	RD	Definite=Def|Gender=Masc|Number=Plur|PronType=Art	4	det	_	_
+4	capelli	capello	NOUN	S	Gender=Masc|Number=Plur	1	obj	_	_
+5	.	.	PUNCT	FS	_	1	punct	_	_
+
+# sent_id = no_obj_iobj_loop_contare
+# expect_no_fix = single_12_transitive_verb
+# expect_tree = valid
+# note = Calambrone 30224_u559. contare is Obj=yes, Iobj=no and has a noun object: single_12_transitive_verb and single_12_iobj_with_object once alternated past 10,000 steps here (Antelmi, Calambrone). Only the guard is tested; the iobj it ends with is wrong (doubled object, see known bugs).
+# text = contale le palline uno , due tre dai contale !
+1-2	contale	_	_	_	_	_	_	_	_
+1	conta	contare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	10	advcl	_	Enclitic=B
+2	le	il	DET	RD	Definite=Def|Gender=Fem|Number=Plur|PronType=Art	4	det	_	_
+3	le	il	DET	RD	Definite=Def|Gender=Fem|Number=Plur|PronType=Art	4	det	_	_
+4	palline	pallina	NOUN	S	Gender=Fem|Number=Plur	1	obj	_	_
+5	uno	uno	NUM	N	NumType=Card	10	nummod	_	_
+6	,	,	PUNCT	FF	_	5	punct	_	_
+7	due	due	NUM	N	NumType=Card	9	nummod	_	_
+8	tre	tre	NUM	N	NumType=Card	9	nummod	_	_
+9	dai	daio	NOUN	S	Gender=Masc|Number=Plur	10	nsubj	_	_
+10-11	contale	_	_	_	_	_	_	_	_
+10	conta	contare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	Enclitic=B
+11	le	il	PRON	PC	Clitic=Yes|Gender=Fem|Number=Plur|Person=3|PronType=Prs	10	obj	_	_
+12	!	!	PUNCT	FS	_	10	punct	_	_
+
+# sent_id = ecco_host
+# expect_fix = ecco_host
+# expect_token = 8 upos=ADV
+# note = Calambrone 30238_u161. the one ecco in the corpus that does not come back ADV.
+# text = non ce ne son pió un altro eccolo , guarda !
+1	non	non	ADV	BN	PronType=Neg	8	advmod	_	_
+2	ce	ce	PRON	PC	Clitic=Yes|PronType=Prs	8	expl	_	_
+3	ne	ne	PRON	PC	Clitic=Yes|PronType=Prs	8	iobj	_	_
+4	son	essere	AUX	VA	Mood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin	8	cop	_	_
+5	pió	pió	PROPN	SP	_	8	nsubj	_	_
+6	un	uno	DET	RI	Definite=Ind|Gender=Masc|Number=Sing|PronType=Art	8	det	_	_
+7	altro	altro	ADJ	A	Gender=Masc|Number=Sing	8	amod	_	_
+8-9	eccolo	_	_	_	_	_	_	_	_
+8	ecco	ecco	NOUN	S	Gender=Masc|Number=Sing	11	nsubj	_	Enclitic=A
+9	lo	lo	PRON	PC	Clitic=Yes|Gender=Masc|Number=Sing|Person=3|PronType=Prs	11	obj	_	_
+10	,	,	PUNCT	FF	_	9	punct	_	_
+11	guarda	guardare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	0	root	_	_
+12	!	!	PUNCT	FS	_	11	punct	_	_
+
+# sent_id = reattach_root_single
+# expect_fix = ecco_clitic
+# expect_token = 4 head=0 deprel=root
+# expect_token = 5 head=4 deprel=expl
+# note = Tonelli 30307_u1010. li is the root: root_clitic_promote moves the root to ecco, reattach_root_single hangs li under it.
+# text = cinquanta sei , eccoli qui .
+1	cinquanta	cinquanta	NUM	N	NumType=Card	5	nummod	_	_
+2	sei	essere	NUM	N	NumType=Card	1	conj	_	_
+3	,	,	PUNCT	FF	_	2	punct	_	_
+4-5	eccoli	_	_	_	_	_	_	_	_
+4	ecco	ecco	ADV	B	_	1	advmod	_	Enclitic=A
+5	li	li	PRON	PC	Clitic=Yes|Gender=Masc|Number=Plur|Person=3|PronType=Prs	0	root	_	_
+6	qui	qui	ADV	B	_	5	advmod	_	_
+7	.	.	PUNCT	FS	_	5	punct	_	_
+
+# sent_id = di_verb_complement
+# expect_fix = di_verb_complement
+# expect_token = 9 head=6 deprel=obl:arg
+# expect_mwt = 7-8 del
+# note = Tonelli 30322_u206. restare has no object frame, so del tamburo is obl:arg and del is split.
+# text = sì questo e quello che resta del tamburo di zia Laura .
+1	sì	sì	ADV	B	_	2	advmod	_	_
+2	questo	questo	PRON	PD	Gender=Masc|Number=Sing|PronType=Dem	0	root	_	_
+3	e	e	CCONJ	CC	_	4	cc	_	_
+4	quello	quello	PRON	PD	Gender=Masc|Number=Sing|PronType=Dem	2	conj	_	_
+5	che	che	PRON	PR	PronType=Rel	6	nsubj	_	_
+6	resta	restare	VERB	V	Mood=Ind|Number=Sing|Person=3|Tense=Pres|VerbForm=Fin	4	acl:relcl	_	_
+7	del	di	DET	DI	Gender=Masc|Number=Sing|PronType=Ind	8	det	_	_
+8	tamburo	tamburo	NOUN	S	Gender=Masc|Number=Sing	6	obj	_	_
+9	di	di	ADP	E	_	10	case	_	_
+10	zia	zia	NOUN	S	Gender=Fem|Number=Sing	8	nmod	_	_
+11	Laura	Laura	PROPN	SP	_	10	nmod	_	_
+12	.	.	PUNCT	FS	_	2	punct	_	_
+
