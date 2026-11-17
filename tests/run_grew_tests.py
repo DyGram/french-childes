@@ -2,6 +2,11 @@
 """Test a Grew rule file against sentences that say what they expect.
 
     uv run tests/run_grew_tests.py french-post-parse.grs tests/french-post-parse.tests.conllu
+    uv run tests/run_grew_tests.py other-languages/italian/italian-post-parse.grs tests/italian-post-parse.tests.conllu
+    uv run tests/run_grew_tests.py other-languages/italian/italian-post-parse.grs tests/italian-post-parse.known-bugs.conllu
+
+The known-bugs file states the correct result for cases the grammar gets wrong
+today, so it is expected to fail until each bug is fixed.
 
 Each test sentence is ordinary CoNLL-U (the parser's output, before any rule)
 with one or more expectations in its comment lines:
@@ -11,10 +16,19 @@ with one or more expectations in its comment lines:
     # expect_tree = valid           the result is one rooted tree without cycles
     # expect_words = de le chat     the word forms after the rewrite, space-separated
     # expect_mwt = 2-3 du           the multiword-token lines after the rewrite, "; "-separated
+    # expect_token = 4 head=3 deprel=obj
+                                    one token after the rewrite (numbered as in the
+                                    OUTPUT); column names form lemma upos xpos feats
+                                    head deprel misc compare the whole column, any
+                                    other Key=Value must be in FEATS or MISC
+    # expect_absent = WhSubject     no token keeps this feature in FEATS or MISC
 
 Every sentence is also checked for a valid tree, whatever it declares.
 expect_words and expect_mwt pin down the tokenisation that package amalgames
 produces, which childes.py relies on when it re-grids the table.
+expect_token tests the rules that log nothing in fix= (Italian lemma repairs,
+clitic re-attachment, cycle repair), and expect_absent the working-memory
+marks a grammar must delete before the output is written.
 
 Why each kind exists (French CHILDES, Sept 2026):
 - expect_fix: a rule that never fires is silent - Grew does not warn.
@@ -68,6 +82,27 @@ def fired(rows):
                 if part.startswith("fix="):
                     tags.update(part[4:].split(","))
     return tags
+
+
+COLUMNS = {"form": 1, "lemma": 2, "upos": 3, "xpos": 4, "feats": 5,
+           "head": 6, "deprel": 7, "misc": 9}
+
+
+def token_mismatches(cols, pairs):
+    """What differs between one output row and the 'key=value' pairs expected of it."""
+    found = {}
+    for col in (cols[5], cols[9]):
+        for part in col.split("|"):
+            if "=" in part:
+                k, v = part.split("=", 1)
+                found[k] = v
+    out = []
+    for pair in pairs:
+        key, want = pair.split("=", 1)
+        got = cols[COLUMNS[key]] if key in COLUMNS else found.get(key, "(absent)")
+        if got != want:
+            out.append(f"has {key}={got}, expected {want}")
+    return out
 
 
 def tree_problem(rows):
@@ -139,6 +174,21 @@ def main():
             got = "; ".join(f"{c[0]} {c[1]}" for c in cols if "-" in c[0])
             if got != want:
                 failures.append(f"{sid}: multiword tokens are '{got}', expected '{want}'")
+        by_id = {c[0]: c for c in cols if len(c) >= 10}
+        for want in values(comments, "expect_token"):
+            checked += 1
+            tid, *pairs = want.split()
+            if tid not in by_id:
+                failures.append(f"{sid}: no token {tid} after the rules")
+                continue
+            for msg in token_mismatches(by_id[tid], pairs):
+                failures.append(f"{sid}: token {tid} {msg}")
+        for name in values(comments, "expect_absent"):
+            checked += 1
+            left = [c[0] for c in by_id.values()
+                    if name in {p.split("=", 1)[0] for col in (c[5], c[9]) for p in col.split("|")}]
+            if left:
+                failures.append(f"{sid}: {name} left on token(s) {', '.join(left)}")
         checked += 1
         problem = tree_problem(out)
         if problem:
